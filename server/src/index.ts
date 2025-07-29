@@ -1,6 +1,6 @@
 import express from 'express';
 import http from 'http';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { registerRoomHandlers } from './socket/roomHandlers';
@@ -19,7 +19,7 @@ const io = new Server(server, {
   },
 });
 
-const onConnection = (socket: any) => {
+const onConnection = (socket: Socket) => {
   console.log(`New client connected: ${socket.id}`);
   
   registerRoomHandlers(io, socket);

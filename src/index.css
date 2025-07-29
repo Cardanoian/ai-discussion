@@ -116,5 +116,14 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: #020617; /* fallback */
+    background-image: radial-gradient(circle at 1px 1px, oklch(1 0 0 / 5%) 1px, transparent 0);
+    background-size: 1.5rem 1.5rem;
+  }
+
+  body.dark {
+    background-color: #020617;
+    background-image: radial-gradient(circle at 1px 1px, oklch(1 0 0 / 10%) 1px, transparent 0);
+    background-size: 1.5rem 1.5rem;
   }
 }

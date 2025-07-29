@@ -19,7 +19,7 @@ CREATE TABLE public.user_profile (
     rating INTEGER DEFAULT 1500 NOT NULL,
     wins INTEGER DEFAULT 0 NOT NULL,
     loses INTEGER DEFAULT 0 NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -112,18 +112,20 @@ CREATE POLICY "Allow user to update their own profile" ON public.user_profile FO
 -- subjects
 ALTER TABLE public.subjects ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow authenticated users to read all subjects" ON public.subjects FOR SELECT TO authenticated USING (true);
--- CREATE POLICY "Allow admin to insert/update/delete subjects" ON public.subjects FOR ALL TO service_role USING (true); -- 필요시 관리자용 정책 추가
+CREATE POLICY "Allow admin to insert/update/delete subjects" ON public.subjects FOR ALL TO service_role USING (true); -- 관리자/서버만 주제를 관리할 수 있도록 정책 추가
 
 -- docs
 ALTER TABLE public.docs ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow user to see their own docs" ON public.docs FOR SELECT TO authenticated USING (auth.uid() = user_uuid);
 CREATE POLICY "Allow user to insert their own docs" ON public.docs FOR INSERT TO authenticated WITH CHECK (auth.uid() = user_uuid);
 CREATE POLICY "Allow user to update their own docs" ON public.docs FOR UPDATE TO authenticated USING (auth.uid() = user_uuid);
+CREATE POLICY "Allow user to delete their own docs" ON public.docs FOR DELETE TO authenticated USING (auth.uid() = user_uuid); -- 사용자가 자신의 문서를 삭제할 수 있도록 정책 추가
 
 -- battles
 ALTER TABLE public.battles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow participants to read their battles" ON public.battles FOR SELECT TO authenticated USING (auth.uid() = player1_uuid OR auth.uid() = player2_uuid);
--- 서버에서만 battle을 생성하므로 service_role을 사용합니다. 클라이언트에서의 직접적인 insert/update는 허용하지 않습니다.
+CREATE POLICY "Allow service_role to manage battles" ON public.battles FOR ALL TO service_role USING (true); -- 서버에서만 battle을 생성, 수정, 삭제할 수 있도록 정책 추가
+
 
 ```
 
