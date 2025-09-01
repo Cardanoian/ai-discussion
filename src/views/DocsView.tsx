@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+import {
+  generateArguments,
+  generateQuestionsAndAnswers,
+} from '@/lib/geminiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Card,
   CardContent,
@@ -18,24 +24,20 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ArrowLeft, Save, PlusCircle, BrainCircuit } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  PlusCircle,
+  BrainCircuit,
+  Sparkles,
+  Loader2,
+} from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
 interface Subject {
   uuid: string;
   title: string;
   text: string;
-}
-
-interface DocUpsertData {
-  user_uuid: string;
-  subject_id: string;
-  content: {
-    reasons: string[];
-    questions: Question[];
-  };
-  against: boolean;
-  id?: number; // Optional id for updates
 }
 
 interface Question {
@@ -48,9 +50,11 @@ const DocsView = () => {
   const [user, setUser] = useState<User | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [position, setPosition] = useState<'favor' | 'against'>('favor');
   const [reasons, setReasons] = useState<string[]>(['']);
   const [questions, setQuestions] = useState<Question[]>([{ q: '', a: '' }]);
-  const [docId, setDocId] = useState<number | null>(null);
+  const [isGeneratingArguments, setIsGeneratingArguments] = useState(false);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -74,12 +78,21 @@ const DocsView = () => {
 
   const fetchDoc = useCallback(async () => {
     if (user && selectedSubject) {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('docs')
-        .select('id, content') // Changed 'reason' to 'content'
+        .select('content, against')
         .eq('user_uuid', user.id)
-        .eq('subject_uuid', selectedSubject)
-        .single();
+        .eq('subject_id', selectedSubject)
+        .eq('against', position === 'against')
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching doc:', error);
+        // 에러가 발생해도 기본값으로 초기화
+        setReasons(['']);
+        setQuestions([{ q: '', a: '' }]);
+        return;
+      }
 
       if (data && data.content) {
         const docData = data.content as {
@@ -88,15 +101,12 @@ const DocsView = () => {
         };
         setReasons(docData.reasons || ['']);
         setQuestions(docData.questions || [{ q: '', a: '' }]);
-        // Assuming 'id' is a BIGINT/number in the DB
-        setDocId(data.id as number);
       } else {
         setReasons(['']);
         setQuestions([{ q: '', a: '' }]);
-        setDocId(null);
       }
     }
-  }, [user, selectedSubject]);
+  }, [user, selectedSubject, position]);
 
   useEffect(() => {
     fetchDoc();
@@ -135,27 +145,117 @@ const DocsView = () => {
       ),
     };
 
-    const upsertData: DocUpsertData = {
+    const upsertData = {
       user_uuid: user.id,
       subject_id: selectedSubject,
       content: doc,
-      against: false, // Defaulting to false as per previous implementation
+      against: position === 'against',
     };
 
-    // If docId exists, it means we are updating an existing record.
-    // The 'id' column should be included for an update to work correctly with upsert.
-    if (docId) {
-      upsertData.id = docId;
-    }
-
-    const { error } = await supabase.from('docs').upsert(upsertData).select();
+    // upsert는 user_uuid, subject_id, against 조합으로 unique constraint를 사용
+    // id는 GENERATED ALWAYS이므로 포함하지 않음
+    const { error } = await supabase
+      .from('docs')
+      .upsert(upsertData, {
+        onConflict: 'user_uuid,subject_id,against',
+      })
+      .select();
 
     if (error) {
       console.error('Error saving doc:', error);
       alert('자료 저장에 실패했습니다.');
     } else {
-      alert('자료가 성공적으로 저장되었습니다!');
-      navigate('/main');
+      const positionText = position === 'favor' ? '찬성' : '반대';
+      alert(`${positionText} 입장 자료가 성공적으로 저장되었습니다!`);
+      // navigate('/main');
+    }
+  };
+
+  const handleGenerateArguments = async () => {
+    if (!selectedSubject) {
+      alert('토론 주제를 먼저 선택해주세요.');
+      return;
+    }
+
+    const selectedSubjectData = subjects.find(
+      (s) => s.uuid === selectedSubject
+    );
+    if (!selectedSubjectData) {
+      alert('선택된 주제 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    setIsGeneratingArguments(true);
+    try {
+      const generatedArguments = await generateArguments(
+        selectedSubjectData.title,
+        reasons,
+        position === 'against'
+      );
+
+      // 기존 근거에 AI 생성 근거 추가
+      const newReasons = [...reasons];
+      generatedArguments.forEach((arg) => {
+        newReasons.push(arg);
+      });
+      setReasons(newReasons);
+
+      alert(`AI가 ${generatedArguments.length}개의 근거를 생성했습니다!`);
+    } catch (error) {
+      console.error('AI 근거 생성 오류:', error);
+      alert(
+        error instanceof Error ? error.message : 'AI 근거 생성에 실패했습니다.'
+      );
+    } finally {
+      setIsGeneratingArguments(false);
+    }
+  };
+
+  const handleGenerateQuestions = async () => {
+    if (!selectedSubject) {
+      alert('토론 주제를 먼저 선택해주세요.');
+      return;
+    }
+
+    const selectedSubjectData = subjects.find(
+      (s) => s.uuid === selectedSubject
+    );
+    if (!selectedSubjectData) {
+      alert('선택된 주제 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    const validReasons = reasons.filter((r) => r.trim() !== '');
+    if (validReasons.length === 0) {
+      alert('먼저 주장 근거를 작성해주세요.');
+      return;
+    }
+
+    setIsGeneratingQuestions(true);
+    try {
+      const generatedQA = await generateQuestionsAndAnswers(
+        selectedSubjectData.title,
+        validReasons,
+        questions
+      );
+
+      // 기존 질문/답변에 AI 생성 질문/답변 추가
+      const newQuestions = [...questions];
+      generatedQA.forEach((qa) => {
+        newQuestions.push(qa);
+      });
+      setQuestions(newQuestions);
+
+      alert(`AI가 ${generatedQA.length}개의 질문/답변을 생성했습니다!`);
+    } catch (error) {
+      console.error('AI 질문/답변 생성 오류:', error);
+      alert(
+        error instanceof Error
+          ? error.message
+          : 'AI 질문/답변 생성에 실패했습니다.'
+      );
+    } finally {
+      setIsGeneratingQuestions(false);
     }
   };
 
@@ -175,22 +275,65 @@ const DocsView = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className='space-y-6'>
-          <Select onValueChange={setSelectedSubject} value={selectedSubject}>
-            <SelectTrigger>
-              <SelectValue placeholder='토론 주제를 선택하세요' />
-            </SelectTrigger>
-            <SelectContent>
-              {subjects.map((subject) => (
-                <SelectItem key={subject.uuid} value={subject.uuid}>
-                  {subject.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='subject-select'>토론 주제</Label>
+              <Select
+                onValueChange={setSelectedSubject}
+                value={selectedSubject}
+              >
+                <SelectTrigger id='subject-select'>
+                  <SelectValue placeholder='토론 주제를 선택하세요' />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.uuid} value={subject.uuid}>
+                      {subject.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className='space-y-2'>
+              <Label>입장 선택</Label>
+              <RadioGroup
+                value={position}
+                onValueChange={(value) =>
+                  setPosition(value as 'favor' | 'against')
+                }
+                className='flex space-x-6'
+              >
+                <div className='flex items-center space-x-2'>
+                  <RadioGroupItem value='favor' id='favor' />
+                  <Label htmlFor='favor'>찬성</Label>
+                </div>
+                <div className='flex items-center space-x-2'>
+                  <RadioGroupItem value='against' id='against' />
+                  <Label htmlFor='against'>반대</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className='text-xl'>내 주장</CardTitle>
+              <CardTitle className='text-xl flex items-center justify-between'>
+                내 주장
+                <Button
+                  onClick={handleGenerateArguments}
+                  disabled={!selectedSubject || isGeneratingArguments}
+                  variant='outline'
+                  size='sm'
+                >
+                  {isGeneratingArguments ? (
+                    <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                  ) : (
+                    <Sparkles className='w-4 h-4 mr-2' />
+                  )}
+                  AI 도움
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent className='space-y-4'>
               {reasons.map((reason, index) => (
@@ -211,7 +354,26 @@ const DocsView = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle className='text-xl'>예상 질문 및 답변</CardTitle>
+              <CardTitle className='text-xl flex items-center justify-between'>
+                예상 질문 및 답변
+                <Button
+                  onClick={handleGenerateQuestions}
+                  disabled={
+                    !selectedSubject ||
+                    isGeneratingQuestions ||
+                    reasons.filter((r) => r.trim()).length === 0
+                  }
+                  variant='outline'
+                  size='sm'
+                >
+                  {isGeneratingQuestions ? (
+                    <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                  ) : (
+                    <Sparkles className='w-4 h-4 mr-2' />
+                  )}
+                  AI 도움
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent className='space-y-4'>
               {questions.map((item, index) => (

@@ -42,6 +42,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 기존 트리거가 있다면 삭제
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+
 -- 사용자 생성 시 함수를 실행하는 트리거
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
