@@ -166,7 +166,13 @@ export const useRoomListViewModel = () => {
 
   const handlePositionSelect = (position: 'agree' | 'disagree') => {
     // TODO: Deploy 시 삭제
-    console.log(socket, currentRoom, userId, myPosition);
+    console.log(
+      `socket: ${socket}
+currentRoom: ${currentRoom}
+userId: ${userId}
+myPosition: ${myPosition}
+position: ${position}`
+    );
 
     if (!socket || !currentRoom || !userId) {
       return;
@@ -197,6 +203,10 @@ export const useRoomListViewModel = () => {
         }
       );
     }
+    // TODO: Deploy 시 삭제
+    console.log(`userId: ${userId}
+myPosition: ${myPosition}
+position: ${position}`);
   };
 
   const handleReady = () => {
