@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import { supabase } from '@/lib/supabaseClient';
@@ -6,13 +6,7 @@ import type { Player, Room, Subject } from '@/models/Room';
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
-interface RoomListViewModelProps {
-  onBattleStart: () => void;
-}
-
-export const useRoomListViewModel = ({
-  onBattleStart,
-}: RoomListViewModelProps) => {
+export const useRoomListViewModel = () => {
   const navigate = useNavigate();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -24,7 +18,9 @@ export const useRoomListViewModel = ({
   // Room modal states
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
-  const [myPosition, setMyPosition] = useState<'agree' | 'disagree' | ''>('');
+  const [myPosition, setMyPosition] = useState<'agree' | 'disagree' | null>(
+    null
+  );
   const [isChangeSubjectOpen, setIsChangeSubjectOpen] = useState(false);
   const [battleCountdown, setBattleCountdown] = useState<number>(0);
 
@@ -35,6 +31,11 @@ export const useRoomListViewModel = ({
     }
     return player.userId;
   };
+
+  // Handle battle start - navigate to discussion view
+  const handleBattleStart = useCallback(() => {
+    navigate('/discussion');
+  }, [navigate]);
 
   useEffect(() => {
     // Get user authentication info
@@ -92,7 +93,7 @@ export const useRoomListViewModel = ({
       setBattleCountdown(countdown);
       if (countdown === 0) {
         setTimeout(() => {
-          onBattleStart();
+          handleBattleStart();
         }, 500);
       }
     });
@@ -100,7 +101,7 @@ export const useRoomListViewModel = ({
     return () => {
       newSocket.disconnect();
     };
-  }, [onBattleStart, userId]);
+  }, [handleBattleStart, userId]);
 
   const handleCreateRoom = () => {
     if (selectedSubject && socket && userId) {
@@ -144,7 +145,7 @@ export const useRoomListViewModel = ({
     }
     setIsRoomModalOpen(false);
     setCurrentRoom(null);
-    setMyPosition('');
+    setMyPosition(null);
   };
 
   const handleChangeSubject = () => {
@@ -172,7 +173,7 @@ export const useRoomListViewModel = ({
           { roomId: currentRoom.roomId, userId, position: null },
           (ack: { success?: boolean; error?: string }) => {
             if (ack.success) {
-              setMyPosition('');
+              setMyPosition(null);
             } else {
               alert(ack.error || '입장 선택 취소에 실패했습니다.');
             }

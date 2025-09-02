@@ -3,7 +3,7 @@ import WelcomeView from '@/views/WelcomeView';
 import MainView from '@/views/MainView';
 import DocsView from '@/views/DocsView';
 import DiscussionView from '@/views/DiscussionView';
-import WaitingRoomView from '@/views/WaitingRoomView';
+import RoomListView from '@/views/RoomListView';
 import ProfileView from '@/views/ProfileView';
 import AuthGuard from '@/components/AuthGuard';
 
@@ -44,7 +44,7 @@ const router = createBrowserRouter([
     path: '/waiting-room',
     element: (
       <AuthGuard requireAuth>
-        <WaitingRoomView />
+        <RoomListView />
       </AuthGuard>
     ),
   },
