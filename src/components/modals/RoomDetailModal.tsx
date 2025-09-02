@@ -144,16 +144,7 @@ const RoomDetailModal = ({
                         myPosition === 'agree'
                           ? 'bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg shadow-green-500/20 text-green-700 dark:text-green-300'
                           : 'bg-transparent hover:bg-green-50/50 dark:hover:bg-green-900/10 border-gray-200 dark:border-gray-700'
-                      } ${
-                        currentRoom?.players.find((p) => p.userId !== userId)
-                          ?.position === 'agree'
-                          ? 'opacity-50 cursor-not-allowed'
-                          : ''
                       }`}
-                      disabled={
-                        currentRoom?.players.find((p) => p.userId !== userId)
-                          ?.position === 'agree'
-                      }
                       onClick={() => onPositionSelect('agree')}
                     >
                       <div className='flex items-center justify-center space-x-2'>
@@ -167,16 +158,7 @@ const RoomDetailModal = ({
                         myPosition === 'disagree'
                           ? 'bg-red-50 dark:bg-red-900/20 border-red-500 shadow-lg shadow-red-500/20 text-red-700 dark:text-red-300'
                           : 'bg-transparent hover:bg-red-50/50 dark:hover:bg-red-900/10 border-gray-200 dark:border-gray-700'
-                      } ${
-                        currentRoom?.players.find((p) => p.userId !== userId)
-                          ?.position === 'disagree'
-                          ? 'opacity-50 cursor-not-allowed'
-                          : ''
                       }`}
-                      disabled={
-                        currentRoom?.players.find((p) => p.userId !== userId)
-                          ?.position === 'disagree'
-                      }
                       onClick={() => onPositionSelect('disagree')}
                     >
                       <div className='flex items-center justify-center space-x-2'>

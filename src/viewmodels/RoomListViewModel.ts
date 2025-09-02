@@ -26,7 +26,7 @@ export const useRoomListViewModel = () => {
 
   // Helper function to get display name for a player
   const getPlayerDisplayName = (player: Player) => {
-    if (player.nickname) {
+    if (player.nickname && player.nickname.trim() !== '') {
       return player.nickname;
     }
     return player.userId;
@@ -165,33 +165,37 @@ export const useRoomListViewModel = () => {
   };
 
   const handlePositionSelect = (position: 'agree' | 'disagree') => {
-    if (socket && currentRoom && userId) {
-      // 같은 입장을 다시 클릭하면 선택 취소
-      if (myPosition === position) {
-        socket.emit(
-          'select_position',
-          { roomId: currentRoom.roomId, userId, position: null },
-          (ack: { success?: boolean; error?: string }) => {
-            if (ack.success) {
-              setMyPosition(null);
-            } else {
-              alert(ack.error || '입장 선택 취소에 실패했습니다.');
-            }
+    // TODO: Deploy 시 삭제
+    console.log(socket, currentRoom, userId, myPosition);
+
+    if (!socket || !currentRoom || !userId) {
+      return;
+    }
+    // 같은 입장을 다시 클릭하면 선택 취소
+    if (myPosition === position) {
+      socket.emit(
+        'select_position',
+        { roomId: currentRoom.roomId, userId, position: null },
+        (ack: { success?: boolean; error?: string }) => {
+          if (ack.success) {
+            setMyPosition(null);
+          } else {
+            alert(ack.error || '입장 선택 취소에 실패했습니다.');
           }
-        );
-      } else {
-        socket.emit(
-          'select_position',
-          { roomId: currentRoom.roomId, userId, position },
-          (ack: { success?: boolean; error?: string }) => {
-            if (ack.success) {
-              setMyPosition(position);
-            } else {
-              alert(ack.error || '입장 선택에 실패했습니다.');
-            }
+        }
+      );
+    } else {
+      socket.emit(
+        'select_position',
+        { roomId: currentRoom.roomId, userId, position },
+        (ack: { success?: boolean; error?: string }) => {
+          if (ack.success) {
+            setMyPosition(position);
+          } else {
+            alert(ack.error || '입장 선택에 실패했습니다.');
           }
-        );
-      }
+        }
+      );
     }
   };
 
