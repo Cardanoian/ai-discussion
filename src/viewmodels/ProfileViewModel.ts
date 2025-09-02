@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { getRankTitle } from '@/lib/constants';
 import type { User } from '@supabase/supabase-js';
-import type { UserStats, UserProfile, RankInfo } from '@/models/Profile';
+import type { UserStats, UserProfile } from '@/models/Profile';
 
 export const useProfileViewModel = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -161,12 +162,12 @@ export const useProfileViewModel = () => {
     try {
       const { error } = await supabase
         .from('user_profile')
-        .update({ nickname: newNickname.trim() || null })
+        .update({ display_name: newNickname.trim() || null })
         .eq('user_uuid', user.id);
 
       if (error) {
-        console.error('Error updating nickname:', error);
-        alert(`닉네임 업데이트 실패: ${error.message}`);
+        console.error('Error updating display name:', error);
+        alert(`표시명 업데이트 실패: ${error.message}`);
         return;
       }
 
@@ -174,16 +175,16 @@ export const useProfileViewModel = () => {
       await fetchUserStats(user.id);
       setIsEditNicknameOpen(false);
       setNewNickname('');
-      alert('닉네임이 성공적으로 업데이트되었습니다!');
+      alert('표시명이 성공적으로 업데이트되었습니다!');
     } catch (error) {
-      console.error('Error updating nickname:', error);
-      alert('닉네임 업데이트 중 오류가 발생했습니다.');
+      console.error('Error updating display name:', error);
+      alert('표시명 업데이트 중 오류가 발생했습니다.');
     }
   };
 
   const getDisplayName = () => {
-    if (userProfile?.nickname) {
-      return userProfile.nickname;
+    if (userProfile?.display_name) {
+      return userProfile.display_name;
     }
     return user?.user_metadata.full_name || user?.email || user?.id;
   };
@@ -191,50 +192,6 @@ export const useProfileViewModel = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
-  };
-
-  const getRankTitle = (rating: number): RankInfo => {
-    if (rating >= 3000)
-      return {
-        title: '그랜드마스터',
-        color: 'from-red-300 to-red-500',
-        textColor: 'text-red-500 dark:text-red-300',
-      };
-    if (rating >= 2800)
-      return {
-        title: '마스터',
-        color: 'from-purple-300 to-purple-500',
-        textColor: 'text-purple-500 dark:text-purple-300',
-      };
-    if (rating >= 2500)
-      return {
-        title: '다이아몬드',
-        color: 'from-blue-400 to-cyan-500',
-        textColor: 'text-blue-400 dark:text-cyan-500',
-      };
-    if (rating >= 2200)
-      return {
-        title: '플래티넘',
-        color: 'from-cyan-300 to-cyan-500',
-        textColor: 'text-cyan-500 dark:text-cyan-300',
-      };
-    if (rating >= 1800)
-      return {
-        title: '골드',
-        color: 'from-yellow-300 to-yellow-500',
-        textColor: 'text-yellow-500 dark:text-yellow-300',
-      };
-    if (rating >= 1600)
-      return {
-        title: '실버',
-        color: 'from-gray-300 to-gray-500',
-        textColor: 'text-gray-500 dark:text-gray-300',
-      };
-    return {
-      title: '브론즈',
-      color: 'from-orange-600 to-orange-800',
-      textColor: 'text-orange-800 dark:text-orange-600',
-    };
   };
 
   const rank = getRankTitle(userStats.rating);

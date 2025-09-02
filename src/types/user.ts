@@ -2,8 +2,7 @@
 
 export interface UserProfile {
   user_uuid: string;
-  display_name: string | null;
-  nickname: string | null;
+  display_name: string;
   rating: number;
   wins: number;
   loses: number;
@@ -24,25 +23,16 @@ export interface UserStats {
 export interface Player {
   socketId: string;
   userId: string;
-  nickname?: string;
+  displayname: string;
   isReady: boolean;
   position?: 'agree' | 'disagree';
 }
 
-// 닉네임 표시를 위한 헬퍼 함수
-export const getDisplayName = (
-  userProfile: UserProfile | null,
-  fallback: string
-): string => {
-  if (userProfile?.nickname) {
-    return userProfile.nickname;
-  }
-  return fallback;
+// 표시명을 위한 헬퍼 함수
+export const getDisplayName = (userProfile: UserProfile | null): string => {
+  return userProfile?.display_name ?? '';
 };
 
 export const getPlayerDisplayName = (player: Player): string => {
-  if (player.nickname) {
-    return player.nickname;
-  }
-  return player.userId;
+  return player.displayname;
 };

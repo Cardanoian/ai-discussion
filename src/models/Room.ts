@@ -1,9 +1,12 @@
 export interface Player {
   socketId: string;
   userId: string;
-  nickname?: string;
+  displayname: string;
   isReady: boolean;
   position?: 'agree' | 'disagree';
+  rating: number;
+  wins: number;
+  loses: number;
 }
 
 export interface Room {

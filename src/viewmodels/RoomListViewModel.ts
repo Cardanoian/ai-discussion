@@ -26,8 +26,8 @@ export const useRoomListViewModel = () => {
 
   // Helper function to get display name for a player
   const getPlayerDisplayName = (player: Player) => {
-    if (player.nickname && player.nickname.trim() !== '') {
-      return player.nickname;
+    if (player.displayname && player.displayname.trim() !== '') {
+      return player.displayname;
     }
     return player.userId;
   };

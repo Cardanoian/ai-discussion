@@ -35,7 +35,6 @@ import {
   ArrowLeft,
   Crown,
   Zap,
-  Award,
   Camera,
   Edit,
 } from 'lucide-react';
@@ -63,6 +62,28 @@ const ProfileView = () => {
     handleLogout,
     getDisplayName,
   } = useProfileViewModel();
+
+  // 승급까지 필요한 점수 계산
+  const getPointsToPromotion = (rating: number): number => {
+    if (rating >= 3000) return 0; // 이미 최고 등급
+    if (rating >= 2800) return 3000 - rating;
+    if (rating >= 2500) return 2800 - rating;
+    if (rating >= 2200) return 2500 - rating;
+    if (rating >= 1800) return 2200 - rating;
+    if (rating >= 1600) return 1800 - rating;
+    return 1600 - rating; // 브론즈에서 실버로
+  };
+
+  // 강등까지 남은 점수 계산
+  const getPointsToDemotion = (rating: number): number => {
+    if (rating >= 3000) return rating - 3000;
+    if (rating >= 2800) return rating - 2800;
+    if (rating >= 2500) return rating - 2500;
+    if (rating >= 2200) return rating - 2200;
+    if (rating >= 1800) return rating - 1800;
+    if (rating >= 1600) return rating - 1600;
+    return 0; // 브론즈는 0까지
+  };
 
   if (loading) {
     return (
@@ -193,7 +214,7 @@ const ProfileView = () => {
                             size='sm'
                             className='p-1 h-auto hover:bg-white/20 dark:hover:bg-slate-800/20'
                             onClick={() =>
-                              setNewNickname(userProfile?.nickname || '')
+                              setNewNickname(userProfile?.display_name || '')
                             }
                           >
                             <Edit className='w-4 h-4 text-muted-foreground hover:text-foreground' />
@@ -202,24 +223,27 @@ const ProfileView = () => {
                         <DialogContent className='sm:max-w-[425px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20'>
                           <DialogHeader>
                             <DialogTitle className='bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600'>
-                              닉네임 편집
+                              표시명 편집
                             </DialogTitle>
                             <DialogDescription>
-                              표시될 닉네임을 입력하세요. 비워두면 기본 이름이
+                              표시될 이름을 입력하세요. 비워두면 기본 이름이
                               표시됩니다.
                             </DialogDescription>
                           </DialogHeader>
                           <div className='grid gap-4 py-4'>
                             <div className='grid grid-cols-4 items-center gap-4'>
-                              <Label htmlFor='nickname' className='text-right'>
-                                닉네임
+                              <Label
+                                htmlFor='displayname'
+                                className='text-right'
+                              >
+                                표시명
                               </Label>
                               <Input
-                                id='nickname'
+                                id='displayname'
                                 value={newNickname}
                                 onChange={(e) => setNewNickname(e.target.value)}
                                 className='col-span-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20'
-                                placeholder='닉네임을 입력하세요'
+                                placeholder='표시명을 입력하세요'
                                 maxLength={20}
                               />
                             </div>
@@ -271,40 +295,6 @@ const ProfileView = () => {
               </CardHeader>
             </Card>
 
-            {/* Wins */}
-            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-green-500/10 hover:shadow-2xl hover:shadow-green-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
-              <div className='absolute inset-0 bg-gradient-to-br from-green-500/5 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
-              <CardHeader className='relative text-center'>
-                <div className='flex justify-center mb-2'>
-                  <div className='relative'>
-                    <div className='absolute inset-0 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
-                    <Award className='relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-500' />
-                  </div>
-                </div>
-                <CardTitle className='text-3xl font-bold text-green-600 dark:text-green-400'>
-                  {userStats.wins}
-                </CardTitle>
-                <CardDescription>승리</CardDescription>
-              </CardHeader>
-            </Card>
-
-            {/* Losses */}
-            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-red-500/10 hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
-              <div className='absolute inset-0 bg-gradient-to-br from-red-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
-              <CardHeader className='relative text-center'>
-                <div className='flex justify-center mb-2'>
-                  <div className='relative'>
-                    <div className='absolute inset-0 bg-gradient-to-r from-red-500 to-pink-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
-                    <Target className='relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-pink-500' />
-                  </div>
-                </div>
-                <CardTitle className='text-3xl font-bold text-red-600 dark:text-red-400'>
-                  {userStats.loses}
-                </CardTitle>
-                <CardDescription>패배</CardDescription>
-              </CardHeader>
-            </Card>
-
             {/* Win Rate */}
             <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
               <div className='absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
@@ -321,9 +311,43 @@ const ProfileView = () => {
                 <CardDescription>승률</CardDescription>
               </CardHeader>
             </Card>
+
+            {/* Points to Promotion */}
+            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
+              <div className='absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
+              <CardHeader className='relative text-center'>
+                <div className='flex justify-center mb-2'>
+                  <div className='relative'>
+                    <div className='absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
+                    <TrendingUp className='relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500' />
+                  </div>
+                </div>
+                <CardTitle className='text-3xl font-bold text-emerald-600 dark:text-emerald-400'>
+                  {getPointsToPromotion(userStats.rating)}
+                </CardTitle>
+                <CardDescription>승급까지</CardDescription>
+              </CardHeader>
+            </Card>
+
+            {/* Points to Demotion */}
+            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-orange-500/10 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
+              <div className='absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
+              <CardHeader className='relative text-center'>
+                <div className='flex justify-center mb-2'>
+                  <div className='relative'>
+                    <div className='absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
+                    <Target className='relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500' />
+                  </div>
+                </div>
+                <CardTitle className='text-3xl font-bold text-orange-600 dark:text-orange-400'>
+                  {getPointsToDemotion(userStats.rating)}
+                </CardTitle>
+                <CardDescription>강등까지</CardDescription>
+              </CardHeader>
+            </Card>
           </div>
 
-          {/* Additional Stats */}
+          {/* Game Results */}
           <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500'>
             <div className='absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
 
@@ -333,36 +357,30 @@ const ProfileView = () => {
                   <div className='absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
                   <Zap className='relative w-6 h-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-500' />
                 </div>
-                게임 통계
+                게임 결과
               </CardTitle>
             </CardHeader>
             <CardContent className='relative'>
               <div className='grid md:grid-cols-3 gap-6'>
                 <div className='text-center'>
-                  <div className='text-2xl font-bold text-purple-600 dark:text-purple-400 mb-1'>
-                    {userStats.total_games}
+                  <div className='text-2xl font-bold text-green-600 dark:text-green-400 mb-1'>
+                    {userStats.wins}
                   </div>
-                  <div className='text-sm text-muted-foreground'>
-                    총 게임 수
-                  </div>
+                  <div className='text-sm text-muted-foreground'>승리</div>
                 </div>
                 <div className='text-center'>
-                  <div className='text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-1'>
-                    {userStats.total_games > 0
-                      ? Math.round(userStats.rating / userStats.total_games)
-                      : 0}
-                  </div>
-                  <div className='text-sm text-muted-foreground'>
-                    게임당 평균 레이팅
-                  </div>
-                </div>
-                <div className='text-center'>
-                  <div className='text-2xl font-bold text-cyan-600 dark:text-cyan-400 mb-1'>
+                  <div className='text-2xl font-bold text-gray-600 dark:text-gray-400 mb-1'>
                     {userStats.total_games > 0
                       ? userStats.total_games - userStats.wins - userStats.loses
                       : 0}
                   </div>
                   <div className='text-sm text-muted-foreground'>무승부</div>
+                </div>
+                <div className='text-center'>
+                  <div className='text-2xl font-bold text-red-600 dark:text-red-400 mb-1'>
+                    {userStats.loses}
+                  </div>
+                  <div className='text-sm text-muted-foreground'>패배</div>
                 </div>
               </div>
             </CardContent>

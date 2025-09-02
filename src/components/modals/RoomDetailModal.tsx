@@ -18,6 +18,7 @@ import {
   Clock,
   X,
 } from 'lucide-react';
+import { getRankTitle } from '@/lib/constants';
 import type { Room, Subject, Player } from '@/models/Room';
 import ChangeSubjectModal from './ChangeSubjectModal';
 
@@ -174,46 +175,79 @@ const RoomDetailModal = ({
                   <h4 className='font-semibold text-muted-foreground text-sm'>
                     참가자 현황
                   </h4>
-                  {currentRoom?.players.map((player, index) => (
-                    <div
-                      key={player.socketId}
-                      className='flex items-center justify-between p-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-lg border border-white/20'
-                    >
-                      <div className='flex items-center space-x-2'>
-                        <div
-                          className={`w-2 h-2 rounded-full ${
-                            index === 0 ? 'bg-blue-500' : 'bg-purple-500'
-                          } animate-pulse`}
-                        ></div>
-                        <span className='truncate font-medium text-sm'>
-                          {getPlayerDisplayName(player)}
-                          {player.userId === userId && ' (나)'}
-                        </span>
-                        {player.position && (
+                  {currentRoom?.players.map((player, index) => {
+                    const winRate =
+                      player.wins + player.loses > 0
+                        ? Math.round(
+                            (player.wins / (player.wins + player.loses)) * 100
+                          )
+                        : 0;
+
+                    const rank = getRankTitle(player.rating);
+
+                    return (
+                      <div
+                        key={player.socketId}
+                        className='p-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-lg border border-white/20 space-y-2'
+                      >
+                        <div className='flex items-center justify-between'>
+                          <div className='flex items-center space-x-2'>
+                            <div
+                              className={`w-2 h-2 rounded-full ${
+                                index === 0 ? 'bg-blue-500' : 'bg-purple-500'
+                              } animate-pulse`}
+                            ></div>
+                            <span
+                              className={`truncate font-medium text-sm ${rank.textColor}`}
+                            >
+                              {getPlayerDisplayName(player)}
+                              {player.userId === userId && ' (나)'}
+                            </span>
+                            {player.position && (
+                              <Badge
+                                variant='outline'
+                                className={`text-xs ${
+                                  player.position === 'agree'
+                                    ? 'border-green-500 text-green-600 bg-green-50 dark:bg-green-900/20'
+                                    : 'border-red-500 text-red-600 bg-red-50 dark:bg-red-900/20'
+                                }`}
+                              >
+                                {player.position === 'agree' ? '찬성' : '반대'}
+                              </Badge>
+                            )}
+                          </div>
                           <Badge
-                            variant='outline'
+                            variant={player.isReady ? 'default' : 'secondary'}
                             className={`text-xs ${
-                              player.position === 'agree'
-                                ? 'border-green-500 text-green-600 bg-green-50 dark:bg-green-900/20'
-                                : 'border-red-500 text-red-600 bg-red-50 dark:bg-red-900/20'
+                              player.isReady
+                                ? 'bg-green-500 hover:bg-green-600'
+                                : ''
                             }`}
                           >
-                            {player.position === 'agree' ? '찬성' : '반대'}
+                            {player.isReady ? '준비 완료' : '대기중'}
                           </Badge>
-                        )}
+                        </div>
+
+                        {/* Player Stats */}
+                        <div className='flex items-center justify-between text-xs text-muted-foreground'>
+                          <div className='flex items-center space-x-3'>
+                            <span className='bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent font-semibold'>
+                              레이팅: {player.rating}
+                            </span>
+                            <span className='text-green-600 dark:text-green-400'>
+                              승: {player.wins}
+                            </span>
+                            <span className='text-red-600 dark:text-red-400'>
+                              패: {player.loses}
+                            </span>
+                          </div>
+                          <span className='font-medium text-blue-600 dark:text-blue-400'>
+                            승률: {winRate}%
+                          </span>
+                        </div>
                       </div>
-                      <Badge
-                        variant={player.isReady ? 'default' : 'secondary'}
-                        className={`text-xs ${
-                          player.isReady
-                            ? 'bg-green-500 hover:bg-green-600'
-                            : ''
-                        }`}
-                      >
-                        {player.isReady ? '준비 완료' : '대기중'}
-                      </Badge>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Empty slot */}
                   {currentRoom && currentRoom.players.length < 2 && (
