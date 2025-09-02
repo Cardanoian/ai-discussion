@@ -4,6 +4,7 @@ import MainView from '@/views/MainView';
 import DocsView from '@/views/DocsView';
 import DiscussionView from '@/views/DiscussionView';
 import WaitingRoomView from '@/views/WaitingRoomView';
+import ProfileView from '@/views/ProfileView';
 import AuthGuard from '@/components/AuthGuard';
 
 const router = createBrowserRouter([
@@ -44,6 +45,14 @@ const router = createBrowserRouter([
     element: (
       <AuthGuard requireAuth>
         <WaitingRoomView />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/profile',
+    element: (
+      <AuthGuard requireAuth>
+        <ProfileView />
       </AuthGuard>
     ),
   },

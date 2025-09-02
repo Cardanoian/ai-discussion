@@ -28,24 +28,52 @@ import type { User } from '@supabase/supabase-js';
 
 const MainView = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        }
       }
     );
 
     // Initial fetch
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
+      if (user) {
+        fetchUserProfile(user.id);
+      }
     });
 
     return () => {
       authListener.subscription.unsubscribe();
     };
   }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('user_profile')
+        .select('avatar_url')
+        .eq('user_uuid', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setAvatarUrl(profile.avatar_url);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -78,8 +106,16 @@ const MainView = () => {
                   variant='ghost'
                   className='flex items-center space-x-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300'
                 >
-                  <div className='w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center'>
-                    <UserIcon className='w-4 h-4 text-white' />
+                  <div className='w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center overflow-hidden'>
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt='프로필 사진'
+                        className='w-full h-full object-cover'
+                      />
+                    ) : (
+                      <UserIcon className='w-4 h-4 text-white' />
+                    )}
                   </div>
                   <span className='font-medium'>
                     {user.user_metadata.full_name || user.email}
@@ -92,7 +128,12 @@ const MainView = () => {
               >
                 <DropdownMenuLabel>내 계정</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>프로필 (준비중)</DropdownMenuItem>
+                <Link to='/profile'>
+                  <DropdownMenuItem>
+                    <UserIcon className='w-4 h-4 mr-2' />
+                    프로필
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem
                   onClick={handleLogout}
                   className='text-red-600 dark:text-red-400'
