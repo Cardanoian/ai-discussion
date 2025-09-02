@@ -24,7 +24,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ArrowLeft, Save, PlusCircle, Sparkles, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  PlusCircle,
+  Sparkles,
+  Loader2,
+  X,
+} from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
 interface Subject {
@@ -44,8 +51,8 @@ const DocsView = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [position, setPosition] = useState<'favor' | 'against'>('favor');
-  const [reasons, setReasons] = useState<string[]>(['']);
-  const [questions, setQuestions] = useState<Question[]>([{ q: '', a: '' }]);
+  const [reasons, setReasons] = useState<string[]>([]);
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [isGeneratingArguments, setIsGeneratingArguments] = useState(false);
   const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
@@ -105,14 +112,19 @@ const DocsView = () => {
     fetchDoc();
   }, [fetchDoc]);
 
-  const handleAddReason = () => setReasons([...reasons]);
+  const handleAddReason = () => setReasons([...reasons, '']);
   const handleReasonChange = (index: number, value: string) => {
     const newReasons = [...reasons];
     newReasons[index] = value;
     setReasons(newReasons);
   };
+  const handleRemoveReason = (index: number) => {
+    const newReasons = reasons.filter((_, i) => i !== index);
+    setReasons(newReasons);
+  };
 
-  const handleAddQuestion = () => setQuestions([...questions]);
+  const handleAddQuestion = () =>
+    setQuestions([...questions, { q: '', a: '' }]);
   const handleQuestionChange = (index: number, value: string) => {
     const newQuestions = [...questions];
     newQuestions[index].q = value;
@@ -121,6 +133,10 @@ const DocsView = () => {
   const handleAnswerChange = (index: number, value: string) => {
     const newQuestions = [...questions];
     newQuestions[index].a = value;
+    setQuestions(newQuestions);
+  };
+  const handleRemoveQuestion = (index: number) => {
+    const newQuestions = questions.filter((_, i) => i !== index);
     setQuestions(newQuestions);
   };
 
@@ -185,9 +201,6 @@ const DocsView = () => {
         position === 'against'
       );
 
-      // TODO console 제거하기
-      console.log(`기존 근거: ${reasons}, ${reasons.length}`);
-
       // 기존 근거에 AI 생성 근거 추가
       const newReasons = [...reasons];
 
@@ -195,9 +208,6 @@ const DocsView = () => {
         newReasons.push(arg);
       });
       setReasons(newReasons);
-
-      // TODO console 제거하기
-      console.log(`근거: ${newReasons}, ${newReasons.length}`);
 
       alert(`AI가 ${generatedArguments.length}개의 근거를 생성했습니다!`);
     } catch (error) {
@@ -336,7 +346,7 @@ const DocsView = () => {
             <Card>
               <CardHeader>
                 <CardTitle className='text-xl flex items-center justify-between'>
-                  내 주장
+                  내 근거
                   <Button
                     onClick={handleGenerateArguments}
                     disabled={!selectedSubject || isGeneratingArguments}
@@ -354,13 +364,24 @@ const DocsView = () => {
               </CardHeader>
               <CardContent className='space-y-4'>
                 {reasons.map((reason, index) => (
-                  <Textarea
-                    key={index}
-                    value={reason}
-                    onChange={(e) => handleReasonChange(index, e.target.value)}
-                    placeholder={`근거 #${index + 1}`}
-                    className='min-h-[100px]'
-                  />
+                  <div key={index} className='relative'>
+                    <Textarea
+                      value={reason}
+                      onChange={(e) =>
+                        handleReasonChange(index, e.target.value)
+                      }
+                      placeholder={`근거 #${index + 1}`}
+                      className='min-h-[100px] pr-10'
+                    />
+                    <Button
+                      onClick={() => handleRemoveReason(index)}
+                      variant='ghost'
+                      size='sm'
+                      className='absolute top-2 right-2 h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50'
+                    >
+                      <X className='h-4 w-4' />
+                    </Button>
+                  </div>
                 ))}
                 <Button onClick={handleAddReason} variant='outline' size='sm'>
                   <PlusCircle className='w-4 h-4 mr-2' />
@@ -394,13 +415,25 @@ const DocsView = () => {
               </CardHeader>
               <CardContent className='space-y-4'>
                 {questions.map((item, index) => (
-                  <div key={index} className='p-4 border rounded-lg space-y-2'>
+                  <div
+                    key={index}
+                    className='relative p-4 border rounded-lg space-y-2'
+                  >
+                    <Button
+                      onClick={() => handleRemoveQuestion(index)}
+                      variant='ghost'
+                      size='sm'
+                      className='absolute top-2 right-2 h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50'
+                    >
+                      <X className='h-4 w-4' />
+                    </Button>
                     <Input
                       value={item.q}
                       onChange={(e) =>
                         handleQuestionChange(index, e.target.value)
                       }
                       placeholder={`예상 질문 #${index + 1}`}
+                      className='pr-10'
                     />
                     <Textarea
                       value={item.a}
