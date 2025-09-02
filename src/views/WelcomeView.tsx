@@ -1,20 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/lib/supabaseClient';
 import { BrainCircuit, Sparkles } from 'lucide-react';
+import { useWelcomeViewModel } from '@/viewmodels/WelcomeViewModel';
 
 const WelcomeView = () => {
-  const handleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}`,
-      },
-    });
-    if (error) {
-      console.error('Error logging in:', error);
-    }
-  };
+  const { handleLogin } = useWelcomeViewModel();
 
   return (
     <div className='flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900'>

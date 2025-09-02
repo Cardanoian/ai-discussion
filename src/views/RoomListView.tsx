@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
-  CardDescription,
+  // CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -24,9 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import io, { Socket } from 'socket.io-client';
 import {
   LogIn,
   Plus,
@@ -42,206 +39,42 @@ import {
   X,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/lib/supabaseClient';
-import { useNavigate } from 'react-router-dom';
-
-// These types should ideally be in a shared file
-interface Player {
-  socketId: string;
-  userId: string;
-  isReady: boolean;
-  position?: 'agree' | 'disagree';
-}
-
-interface Room {
-  roomId: string;
-  players: Player[];
-  subject: { uuid: string; title: string; text: string } | null;
-  isFull: boolean;
-  battleStarted: boolean;
-  createdBy?: string;
-}
-
-interface Subject {
-  uuid: string;
-  title: string;
-  text: string;
-}
-
-const serverUrl = import.meta.env.VITE_SERVER_URL;
+import { useRoomListViewModel } from '@/viewmodels/RoomListViewModel';
 
 interface RoomListViewProps {
   onBattleStart: () => void;
 }
 
 const RoomListView = ({ onBattleStart }: RoomListViewProps) => {
-  const navigate = useNavigate();
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [rooms, setRooms] = useState<Room[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [isCreateRoomOpen, setIsCreateRoomOpen] = useState(false);
-  const [userId, setUserId] = useState<string>('');
+  const {
+    // State
+    rooms,
+    subjects,
+    selectedSubject,
+    isCreateRoomOpen,
+    userId,
+    isRoomModalOpen,
+    currentRoom,
+    myPosition,
+    isChangeSubjectOpen,
+    battleCountdown,
 
-  // Room modal states
-  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
-  const [currentRoom, setCurrentRoom] = useState<Room | null>(null);
-  const [myPosition, setMyPosition] = useState<'agree' | 'disagree' | ''>('');
-  const [isChangeSubjectOpen, setIsChangeSubjectOpen] = useState(false);
-  const [battleCountdown, setBattleCountdown] = useState<number>(0);
+    // Setters
+    setSelectedSubject,
+    setIsCreateRoomOpen,
+    setIsRoomModalOpen,
+    setIsChangeSubjectOpen,
 
-  useEffect(() => {
-    // Get user authentication info
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    };
-    getUser();
-
-    const newSocket = io(
-      process.env.NODE_ENV == 'production' ? serverUrl : 'http://localhost:3050'
-    );
-    setSocket(newSocket);
-
-    newSocket.on('connect', () => {
-      console.log('Connected to socket server:', newSocket.id);
-      newSocket.emit('get_rooms', (data: { rooms: Room[] }) => {
-        setRooms(data.rooms);
-      });
-
-      // Get subjects for room creation
-      newSocket.emit(
-        'get_subjects',
-        (data: { subjects?: Subject[]; error?: string }) => {
-          console.log('Received subjects data:', data);
-          if (data.subjects) {
-            console.log('Setting subjects:', data.subjects);
-            setSubjects(data.subjects);
-          } else if (data.error) {
-            console.error('Error fetching subjects:', data.error);
-          }
-        }
-      );
-    });
-
-    newSocket.on('rooms_update', (updatedRooms: Room[]) => {
-      setRooms(updatedRooms);
-    });
-
-    newSocket.on('room_update', (updatedRoom: Room) => {
-      setCurrentRoom(updatedRoom);
-
-      // Update my position based on room data
-      const me = updatedRoom.players.find((p) => p.userId === userId);
-      if (me && me.position) {
-        setMyPosition(me.position);
-      }
-    });
-
-    newSocket.on('battle_countdown', (countdown: number) => {
-      setBattleCountdown(countdown);
-      if (countdown === 0) {
-        setTimeout(() => {
-          onBattleStart();
-        }, 500);
-      }
-    });
-
-    return () => {
-      newSocket.disconnect();
-    };
-  }, [onBattleStart, userId]);
-
-  const handleCreateRoom = () => {
-    if (selectedSubject && socket && userId) {
-      socket.emit(
-        'create_room',
-        { userId, subjectId: selectedSubject },
-        (ack: { room?: Room; error?: string }) => {
-          if (ack.room) {
-            setCurrentRoom(ack.room);
-            setIsRoomModalOpen(true);
-            setIsCreateRoomOpen(false);
-            setSelectedSubject('');
-          } else {
-            alert(ack.error);
-          }
-        }
-      );
-    }
-  };
-
-  const handleJoinRoom = (roomId: string) => {
-    if (socket && userId) {
-      socket.emit(
-        'join_room',
-        { roomId, userId },
-        (ack: { room?: Room; error?: string }) => {
-          if (ack.room) {
-            setCurrentRoom(ack.room);
-            setIsRoomModalOpen(true);
-          } else {
-            alert(ack.error);
-          }
-        }
-      );
-    }
-  };
-
-  const handleLeaveRoom = () => {
-    if (socket && currentRoom) {
-      socket.emit('leave_room', { roomId: currentRoom.roomId, userId });
-    }
-    setIsRoomModalOpen(false);
-    setCurrentRoom(null);
-    setMyPosition('');
-  };
-
-  const handleChangeSubject = () => {
-    if (selectedSubject && socket && currentRoom) {
-      socket.emit(
-        'change_room_subject',
-        { roomId: currentRoom.roomId, subjectId: selectedSubject },
-        (ack: { success?: boolean; error?: string }) => {
-          if (ack.success) {
-            setIsChangeSubjectOpen(false);
-          } else {
-            alert(ack.error || '주제 변경에 실패했습니다.');
-          }
-        }
-      );
-    }
-  };
-
-  const handlePositionSelect = (position: 'agree' | 'disagree') => {
-    if (socket && currentRoom && userId) {
-      socket.emit(
-        'select_position',
-        { roomId: currentRoom.roomId, userId, position },
-        (ack: { success?: boolean; error?: string }) => {
-          if (ack.success) {
-            setMyPosition(position);
-          } else {
-            alert(ack.error || '입장 선택에 실패했습니다.');
-          }
-        }
-      );
-    }
-  };
-
-  const handleReady = () => {
-    if (socket && currentRoom && userId && myPosition) {
-      socket.emit('player_ready', { roomId: currentRoom.roomId, userId });
-    }
-  };
-
-  const handleGoToMain = () => {
-    navigate('/');
-  };
+    // Handlers
+    handleCreateRoom,
+    handleJoinRoom,
+    handleLeaveRoom,
+    handleChangeSubject,
+    handlePositionSelect,
+    handleReady,
+    handleGoToMain,
+    getPlayerDisplayName,
+  } = useRoomListViewModel({ onBattleStart });
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/30 to-pink-50 dark:from-slate-900 dark:via-slate-800 dark:to-purple-900/50'>
@@ -272,7 +105,7 @@ const RoomListView = ({ onBattleStart }: RoomListViewProps) => {
           <Card className='flex-grow animate-in fade-in-50 duration-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-0 shadow-2xl shadow-purple-500/10'>
             <div className='absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg'></div>
 
-            <CardHeader className='relative'>
+            {/* <CardHeader className='relative'>
               <CardTitle className='text-3xl flex items-center'>
                 <div className='relative mr-3'>
                   <div className='absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur-lg opacity-30 animate-pulse'></div>
@@ -288,7 +121,7 @@ const RoomListView = ({ onBattleStart }: RoomListViewProps) => {
                   실시간 토론 배틀이 기다립니다
                 </span>
               </CardDescription>
-            </CardHeader>
+            </CardHeader> */}
 
             <CardContent className='relative flex-grow flex flex-col'>
               <ScrollArea className='flex-grow pr-4 mb-6'>
@@ -555,84 +388,58 @@ const RoomListView = ({ onBattleStart }: RoomListViewProps) => {
                       <h4 className='font-semibold text-muted-foreground text-sm'>
                         입장 선택
                       </h4>
-                      <RadioGroup
-                        value={myPosition}
-                        onValueChange={(value) =>
-                          handlePositionSelect(value as 'agree' | 'disagree')
-                        }
-                        className='grid grid-cols-2 gap-3'
-                      >
-                        <div className='flex items-center space-x-2'>
-                          <Card
-                            className={`flex-1 p-3 cursor-pointer transition-all duration-300 ${
-                              myPosition === 'agree'
-                                ? 'bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg shadow-green-500/20'
-                                : 'bg-white/50 dark:bg-slate-800/50 hover:bg-green-50/50 dark:hover:bg-green-900/10'
-                            } ${
-                              currentRoom?.players.find(
-                                (p) => p.userId !== userId
-                              )?.position === 'agree'
-                                ? 'opacity-50 cursor-not-allowed'
-                                : ''
-                            }`}
-                          >
-                            <div className='flex items-center space-x-2'>
-                              <RadioGroupItem
-                                value='agree'
-                                id='agree'
-                                disabled={
-                                  currentRoom?.players.find(
-                                    (p) => p.userId !== userId
-                                  )?.position === 'agree'
-                                }
-                                className='text-green-600'
-                              />
-                              <Label
-                                htmlFor='agree'
-                                className='flex items-center cursor-pointer text-sm'
-                              >
-                                <ThumbsUp className='w-4 h-4 mr-1 text-green-600' />
-                                찬성
-                              </Label>
-                            </div>
-                          </Card>
-                        </div>
-                        <div className='flex items-center space-x-2'>
-                          <Card
-                            className={`flex-1 p-3 cursor-pointer transition-all duration-300 ${
-                              myPosition === 'disagree'
-                                ? 'bg-red-50 dark:bg-red-900/20 border-red-500 shadow-lg shadow-red-500/20'
-                                : 'bg-white/50 dark:bg-slate-800/50 hover:bg-red-50/50 dark:hover:bg-red-900/10'
-                            } ${
-                              currentRoom?.players.find(
-                                (p) => p.userId !== userId
-                              )?.position === 'disagree'
-                                ? 'opacity-50 cursor-not-allowed'
-                                : ''
-                            }`}
-                          >
-                            <div className='flex items-center space-x-2'>
-                              <RadioGroupItem
-                                value='disagree'
-                                id='disagree'
-                                disabled={
-                                  currentRoom?.players.find(
-                                    (p) => p.userId !== userId
-                                  )?.position === 'disagree'
-                                }
-                                className='text-red-600'
-                              />
-                              <Label
-                                htmlFor='disagree'
-                                className='flex items-center cursor-pointer text-sm'
-                              >
-                                <ThumbsDown className='w-4 h-4 mr-1 text-red-600' />
-                                반대
-                              </Label>
-                            </div>
-                          </Card>
-                        </div>
-                      </RadioGroup>
+                      <div className='grid grid-cols-2 gap-3'>
+                        <Button
+                          variant='outline'
+                          className={`p-4 h-auto cursor-pointer transition-all duration-300 ${
+                            myPosition === 'agree'
+                              ? 'bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg shadow-green-500/20 text-green-700 dark:text-green-300'
+                              : 'bg-transparent hover:bg-green-50/50 dark:hover:bg-green-900/10 border-gray-200 dark:border-gray-700'
+                          } ${
+                            currentRoom?.players.find(
+                              (p) => p.userId !== userId
+                            )?.position === 'agree'
+                              ? 'opacity-50 cursor-not-allowed'
+                              : ''
+                          }`}
+                          disabled={
+                            currentRoom?.players.find(
+                              (p) => p.userId !== userId
+                            )?.position === 'agree'
+                          }
+                          onClick={() => handlePositionSelect('agree')}
+                        >
+                          <div className='flex items-center justify-center space-x-2'>
+                            <ThumbsUp className='w-4 h-4 text-green-600' />
+                            <span className='text-sm font-medium'>찬성</span>
+                          </div>
+                        </Button>
+                        <Button
+                          variant='outline'
+                          className={`p-4 h-auto cursor-pointer transition-all duration-300 ${
+                            myPosition === 'disagree'
+                              ? 'bg-red-50 dark:bg-red-900/20 border-red-500 shadow-lg shadow-red-500/20 text-red-700 dark:text-red-300'
+                              : 'bg-transparent hover:bg-red-50/50 dark:hover:bg-red-900/10 border-gray-200 dark:border-gray-700'
+                          } ${
+                            currentRoom?.players.find(
+                              (p) => p.userId !== userId
+                            )?.position === 'disagree'
+                              ? 'opacity-50 cursor-not-allowed'
+                              : ''
+                          }`}
+                          disabled={
+                            currentRoom?.players.find(
+                              (p) => p.userId !== userId
+                            )?.position === 'disagree'
+                          }
+                          onClick={() => handlePositionSelect('disagree')}
+                        >
+                          <div className='flex items-center justify-center space-x-2'>
+                            <ThumbsDown className='w-4 h-4 text-red-600' />
+                            <span className='text-sm font-medium'>반대</span>
+                          </div>
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Players Status */}
@@ -652,7 +459,7 @@ const RoomListView = ({ onBattleStart }: RoomListViewProps) => {
                               } animate-pulse`}
                             ></div>
                             <span className='truncate font-medium text-sm'>
-                              {player.userId}
+                              {getPlayerDisplayName(player)}
                               {player.userId === userId && ' (나)'}
                             </span>
                             {player.position && (
@@ -707,11 +514,6 @@ const RoomListView = ({ onBattleStart }: RoomListViewProps) => {
                 onClick={handleReady}
                 disabled={
                   !myPosition ||
-                  !currentRoom?.players.find((p) => p.userId !== userId)
-                    ?.position ||
-                  myPosition ===
-                    currentRoom?.players.find((p) => p.userId !== userId)
-                      ?.position ||
                   currentRoom?.players.find((p) => p.userId === userId)?.isReady
                 }
                 className='bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white border-0'

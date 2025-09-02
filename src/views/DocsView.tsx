@@ -1,10 +1,3 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient';
-import {
-  generateArguments,
-  generateQuestionsAndAnswers,
-} from '@/lib/geminiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,243 +25,36 @@ import {
   Loader2,
   X,
 } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
-
-interface Subject {
-  uuid: string;
-  title: string;
-  text: string;
-}
-
-interface Question {
-  q: string;
-  a: string;
-}
+import { useDocsViewModel } from '@/viewmodels/DocsViewModel';
 
 const DocsView = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [position, setPosition] = useState<'favor' | 'against'>('favor');
-  const [reasons, setReasons] = useState<string[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
-  const [isGeneratingArguments, setIsGeneratingArguments] = useState(false);
-  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const {
+    // State
+    subjects,
+    selectedSubject,
+    position,
+    reasons,
+    questions,
+    isGeneratingArguments,
+    isGeneratingQuestions,
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUser(data.user);
-    };
-    fetchUser();
-  }, []);
+    // Setters
+    setSelectedSubject,
+    setPosition,
 
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      const { data, error } = await supabase.from('subjects').select('*');
-      if (error) {
-        console.error('Error fetching subjects:', error);
-      } else {
-        setSubjects(data);
-      }
-    };
-    fetchSubjects();
-  }, []);
-
-  const fetchDoc = useCallback(async () => {
-    if (user && selectedSubject) {
-      const { data, error } = await supabase
-        .from('docs')
-        .select('content, against')
-        .eq('user_uuid', user.id)
-        .eq('subject_id', selectedSubject)
-        .eq('against', position === 'against')
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching doc:', error);
-        // 에러가 발생해도 기본값으로 초기화
-        setReasons([]);
-        setQuestions([]);
-        return;
-      }
-
-      if (data && data.content) {
-        const docData = data.content as {
-          reasons: string[];
-          questions: Question[];
-        };
-        setReasons(docData.reasons || []);
-        setQuestions(docData.questions || []);
-      } else {
-        setReasons([]);
-        setQuestions([]);
-      }
-    }
-  }, [user, selectedSubject, position]);
-
-  useEffect(() => {
-    fetchDoc();
-  }, [fetchDoc]);
-
-  const handleAddReason = () => setReasons([...reasons, '']);
-  const handleReasonChange = (index: number, value: string) => {
-    const newReasons = [...reasons];
-    newReasons[index] = value;
-    setReasons(newReasons);
-  };
-  const handleRemoveReason = (index: number) => {
-    const newReasons = reasons.filter((_, i) => i !== index);
-    setReasons(newReasons);
-  };
-
-  const handleAddQuestion = () =>
-    setQuestions([...questions, { q: '', a: '' }]);
-  const handleQuestionChange = (index: number, value: string) => {
-    const newQuestions = [...questions];
-    newQuestions[index].q = value;
-    setQuestions(newQuestions);
-  };
-  const handleAnswerChange = (index: number, value: string) => {
-    const newQuestions = [...questions];
-    newQuestions[index].a = value;
-    setQuestions(newQuestions);
-  };
-  const handleRemoveQuestion = (index: number) => {
-    const newQuestions = questions.filter((_, i) => i !== index);
-    setQuestions(newQuestions);
-  };
-
-  const handleSave = async () => {
-    if (!user || !selectedSubject) {
-      alert('토론 주제를 먼저 선택해주세요.');
-      return;
-    }
-
-    const doc = {
-      reasons: reasons.filter((r) => r.trim() !== ''),
-      questions: questions.filter(
-        (q) => q.q.trim() !== '' || q.a.trim() !== ''
-      ),
-    };
-
-    const upsertData = {
-      user_uuid: user.id,
-      subject_id: selectedSubject,
-      content: doc,
-      against: position === 'against',
-    };
-
-    // upsert는 user_uuid, subject_id, against 조합으로 unique constraint를 사용
-    // id는 GENERATED ALWAYS이므로 포함하지 않음
-    const { error } = await supabase
-      .from('docs')
-      .upsert(upsertData, {
-        onConflict: 'user_uuid,subject_id,against',
-      })
-      .select();
-
-    if (error) {
-      console.error('Error saving doc:', error);
-      alert('자료 저장에 실패했습니다.');
-    } else {
-      const positionText = position === 'favor' ? '찬성' : '반대';
-      alert(`${positionText} 입장 자료가 성공적으로 저장되었습니다!`);
-      // navigate('/main');
-    }
-  };
-
-  const handleGenerateArguments = async () => {
-    if (!selectedSubject) {
-      alert('토론 주제를 먼저 선택해주세요.');
-      return;
-    }
-
-    const selectedSubjectData = subjects.find(
-      (s) => s.uuid === selectedSubject
-    );
-    if (!selectedSubjectData) {
-      alert('선택된 주제 정보를 찾을 수 없습니다.');
-      return;
-    }
-
-    setIsGeneratingArguments(true);
-    try {
-      const generatedArguments = await generateArguments(
-        selectedSubjectData.title,
-        reasons,
-        position === 'against'
-      );
-
-      // 기존 근거에 AI 생성 근거 추가
-      const newReasons = [...reasons];
-
-      generatedArguments.forEach((arg) => {
-        newReasons.push(arg);
-      });
-      setReasons(newReasons);
-
-      alert(`AI가 ${generatedArguments.length}개의 근거를 생성했습니다!`);
-    } catch (error) {
-      console.error('AI 근거 생성 오류:', error);
-      alert(
-        error instanceof Error ? error.message : 'AI 근거 생성에 실패했습니다.'
-      );
-    } finally {
-      setIsGeneratingArguments(false);
-    }
-  };
-
-  const handleGenerateQuestions = async () => {
-    if (!selectedSubject) {
-      alert('토론 주제를 먼저 선택해주세요.');
-      return;
-    }
-
-    const selectedSubjectData = subjects.find(
-      (s) => s.uuid === selectedSubject
-    );
-    if (!selectedSubjectData) {
-      alert('선택된 주제 정보를 찾을 수 없습니다.');
-      return;
-    }
-
-    const validReasons = reasons.filter((r) => r.trim() !== '');
-    if (validReasons.length === 0) {
-      alert('먼저 주장 근거를 작성해주세요.');
-      return;
-    }
-
-    setIsGeneratingQuestions(true);
-    try {
-      const generatedQA = await generateQuestionsAndAnswers(
-        selectedSubjectData.title,
-        validReasons,
-        questions
-      );
-
-      // 기존 질문/답변에 AI 생성 질문/답변 추가
-      const newQuestions = [...questions];
-      generatedQA.forEach((qa) => {
-        newQuestions.push(qa);
-      });
-      setQuestions(newQuestions);
-
-      alert(`AI가 ${generatedQA.length}개의 질문/답변을 생성했습니다!`);
-    } catch (error) {
-      console.error('AI 질문/답변 생성 오류:', error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'AI 질문/답변 생성에 실패했습니다.'
-      );
-    } finally {
-      setIsGeneratingQuestions(false);
-    }
-  };
-
-  const handleCancel = () => navigate('/main');
+    // Handlers
+    handleAddReason,
+    handleReasonChange,
+    handleRemoveReason,
+    handleAddQuestion,
+    handleQuestionChange,
+    handleAnswerChange,
+    handleRemoveQuestion,
+    handleSave,
+    handleGenerateArguments,
+    handleGenerateQuestions,
+    handleCancel,
+  } = useDocsViewModel();
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50'>

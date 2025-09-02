@@ -1,13 +1,8 @@
 import RoomListView from './RoomListView';
-import { useNavigate } from 'react-router-dom';
+import { useWaitingRoomViewModel } from '@/viewmodels/WaitingRoomViewModel';
 
 const WaitingRoomView = () => {
-  const navigate = useNavigate();
-
-  const handleBattleStart = () => {
-    // Navigate to discussion view when battle starts
-    navigate('/discussion');
-  };
+  const { handleBattleStart } = useWaitingRoomViewModel();
 
   return <RoomListView onBattleStart={handleBattleStart} />;
 };
