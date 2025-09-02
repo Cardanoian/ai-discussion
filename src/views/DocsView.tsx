@@ -24,14 +24,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  ArrowLeft,
-  Save,
-  PlusCircle,
-  BrainCircuit,
-  Sparkles,
-  Loader2,
-} from 'lucide-react';
+import { ArrowLeft, Save, PlusCircle, Sparkles, Loader2 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
 interface Subject {
@@ -89,8 +82,8 @@ const DocsView = () => {
       if (error) {
         console.error('Error fetching doc:', error);
         // 에러가 발생해도 기본값으로 초기화
-        setReasons(['']);
-        setQuestions([{ q: '', a: '' }]);
+        setReasons([]);
+        setQuestions([]);
         return;
       }
 
@@ -99,11 +92,11 @@ const DocsView = () => {
           reasons: string[];
           questions: Question[];
         };
-        setReasons(docData.reasons || ['']);
-        setQuestions(docData.questions || [{ q: '', a: '' }]);
+        setReasons(docData.reasons || []);
+        setQuestions(docData.questions || []);
       } else {
-        setReasons(['']);
-        setQuestions([{ q: '', a: '' }]);
+        setReasons([]);
+        setQuestions([]);
       }
     }
   }, [user, selectedSubject, position]);
@@ -112,15 +105,14 @@ const DocsView = () => {
     fetchDoc();
   }, [fetchDoc]);
 
-  const handleAddReason = () => setReasons([...reasons, '']);
+  const handleAddReason = () => setReasons([...reasons]);
   const handleReasonChange = (index: number, value: string) => {
     const newReasons = [...reasons];
     newReasons[index] = value;
     setReasons(newReasons);
   };
 
-  const handleAddQuestion = () =>
-    setQuestions([...questions, { q: '', a: '' }]);
+  const handleAddQuestion = () => setQuestions([...questions]);
   const handleQuestionChange = (index: number, value: string) => {
     const newQuestions = [...questions];
     newQuestions[index].q = value;
@@ -193,12 +185,19 @@ const DocsView = () => {
         position === 'against'
       );
 
+      // TODO console 제거하기
+      console.log(`기존 근거: ${reasons}, ${reasons.length}`);
+
       // 기존 근거에 AI 생성 근거 추가
       const newReasons = [...reasons];
+
       generatedArguments.forEach((arg) => {
         newReasons.push(arg);
       });
       setReasons(newReasons);
+
+      // TODO console 제거하기
+      console.log(`근거: ${newReasons}, ${newReasons.length}`);
 
       alert(`AI가 ${generatedArguments.length}개의 근거를 생성했습니다!`);
     } catch (error) {
@@ -262,155 +261,176 @@ const DocsView = () => {
   const handleCancel = () => navigate('/main');
 
   return (
-    <div className='container mx-auto p-4 md:p-8'>
-      <Card className='animate-in fade-in-50 duration-500'>
-        <CardHeader>
-          <CardTitle className='flex items-center text-2xl'>
-            <BrainCircuit className='w-8 h-8 mr-3 text-primary' />
-            토론 자료 준비
-          </CardTitle>
-          <CardDescription>
-            선택한 주제에 대한 주장과 예상 질문/답변을 미리 작성하여 토론을
-            대비하세요.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='space-y-6'>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            <div className='space-y-2'>
-              <Label htmlFor='subject-select'>토론 주제</Label>
-              <Select
-                onValueChange={setSelectedSubject}
-                value={selectedSubject}
-              >
-                <SelectTrigger id='subject-select'>
-                  <SelectValue placeholder='토론 주제를 선택하세요' />
-                </SelectTrigger>
-                <SelectContent>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.uuid} value={subject.uuid}>
-                      {subject.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+    <div className='min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50'>
+      {/* Background decorative elements */}
+      <div className='absolute inset-0 overflow-hidden pointer-events-none'>
+        <div className='absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse'></div>
+        <div className='absolute bottom-20 left-20 w-64 h-64 bg-gradient-to-tr from-cyan-400/10 to-blue-600/10 rounded-full blur-3xl animate-pulse delay-1000'></div>
+      </div>
 
-            <div className='space-y-2'>
-              <Label>입장 선택</Label>
-              <RadioGroup
-                value={position}
-                onValueChange={(value) =>
-                  setPosition(value as 'favor' | 'against')
-                }
-                className='flex space-x-6'
-              >
-                <div className='flex items-center space-x-2'>
-                  <RadioGroupItem value='favor' id='favor' />
-                  <Label htmlFor='favor'>찬성</Label>
-                </div>
-                <div className='flex items-center space-x-2'>
-                  <RadioGroupItem value='against' id='against' />
-                  <Label htmlFor='against'>반대</Label>
-                </div>
-              </RadioGroup>
-            </div>
-          </div>
+      <div className='relative container mx-auto p-4 md:p-8'>
+        <Card className='animate-in fade-in-50 duration-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-0 shadow-2xl shadow-blue-500/10'>
+          <div className='absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg'></div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-xl flex items-center justify-between'>
-                내 주장
-                <Button
-                  onClick={handleGenerateArguments}
-                  disabled={!selectedSubject || isGeneratingArguments}
-                  variant='outline'
-                  size='sm'
+          <CardHeader className='relative'>
+            <CardTitle className='flex items-center text-3xl'>
+              <div className='relative mr-4'>
+                <div className='absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg blur-lg opacity-30 animate-pulse'></div>
+              </div>
+              <span className='bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-500'>
+                토론 자료 준비
+              </span>
+            </CardTitle>
+            <CardDescription className='text-muted-foreground/80 text-lg leading-relaxed mt-1'>
+              선택한 주제에 대한 주장과 예상 질문/답변을 미리 작성하여 토론을
+              대비하세요.
+              <br />
+              <span className='text-sm opacity-75'>
+                AI가 더 강력한 논리를 만들어드립니다
+              </span>
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className='relative space-y-3'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='subject-select'>토론 주제</Label>
+                <Select
+                  onValueChange={setSelectedSubject}
+                  value={selectedSubject}
                 >
-                  {isGeneratingArguments ? (
-                    <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                  ) : (
-                    <Sparkles className='w-4 h-4 mr-2' />
-                  )}
-                  AI 도움
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              {reasons.map((reason, index) => (
-                <Textarea
-                  key={index}
-                  value={reason}
-                  onChange={(e) => handleReasonChange(index, e.target.value)}
-                  placeholder={`근거 #${index + 1}`}
-                  className='min-h-[100px]'
-                />
-              ))}
-              <Button onClick={handleAddReason} variant='outline' size='sm'>
-                <PlusCircle className='w-4 h-4 mr-2' />
-                근거 추가
-              </Button>
-            </CardContent>
-          </Card>
+                  <SelectTrigger id='subject-select'>
+                    <SelectValue placeholder='토론 주제를 선택하세요' />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((subject) => (
+                      <SelectItem key={subject.uuid} value={subject.uuid}>
+                        {subject.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className='text-xl flex items-center justify-between'>
-                예상 질문 및 답변
-                <Button
-                  onClick={handleGenerateQuestions}
-                  disabled={
-                    !selectedSubject ||
-                    isGeneratingQuestions ||
-                    reasons.filter((r) => r.trim()).length === 0
+              <div className='space-y-2'>
+                <Label>입장 선택</Label>
+                <RadioGroup
+                  value={position}
+                  onValueChange={(value) =>
+                    setPosition(value as 'favor' | 'against')
                   }
-                  variant='outline'
-                  size='sm'
+                  className='flex space-x-6'
                 >
-                  {isGeneratingQuestions ? (
-                    <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                  ) : (
-                    <Sparkles className='w-4 h-4 mr-2' />
-                  )}
-                  AI 도움
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              {questions.map((item, index) => (
-                <div key={index} className='p-4 border rounded-lg space-y-2'>
-                  <Input
-                    value={item.q}
-                    onChange={(e) =>
-                      handleQuestionChange(index, e.target.value)
-                    }
-                    placeholder={`예상 질문 #${index + 1}`}
-                  />
-                  <Textarea
-                    value={item.a}
-                    onChange={(e) => handleAnswerChange(index, e.target.value)}
-                    placeholder={`답변 #${index + 1}`}
-                  />
-                </div>
-              ))}
-              <Button onClick={handleAddQuestion} variant='outline' size='sm'>
-                <PlusCircle className='w-4 h-4 mr-2' />
-                질문 추가
-              </Button>
-            </CardContent>
-          </Card>
+                  <div className='flex items-center space-x-2'>
+                    <RadioGroupItem value='favor' id='favor' />
+                    <Label htmlFor='favor'>찬성</Label>
+                  </div>
+                  <div className='flex items-center space-x-2'>
+                    <RadioGroupItem value='against' id='against' />
+                    <Label htmlFor='against'>반대</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
 
-          <div className='flex justify-end space-x-4 mt-8'>
-            <Button variant='ghost' onClick={handleCancel}>
-              <ArrowLeft className='w-4 h-4 mr-2' />
-              취소
-            </Button>
-            <Button onClick={handleSave}>
-              <Save className='w-4 h-4 mr-2' />
-              저장
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className='text-xl flex items-center justify-between'>
+                  내 주장
+                  <Button
+                    onClick={handleGenerateArguments}
+                    disabled={!selectedSubject || isGeneratingArguments}
+                    variant='outline'
+                    size='sm'
+                  >
+                    {isGeneratingArguments ? (
+                      <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                    ) : (
+                      <Sparkles className='w-4 h-4 mr-2' />
+                    )}
+                    AI 도움
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='space-y-4'>
+                {reasons.map((reason, index) => (
+                  <Textarea
+                    key={index}
+                    value={reason}
+                    onChange={(e) => handleReasonChange(index, e.target.value)}
+                    placeholder={`근거 #${index + 1}`}
+                    className='min-h-[100px]'
+                  />
+                ))}
+                <Button onClick={handleAddReason} variant='outline' size='sm'>
+                  <PlusCircle className='w-4 h-4 mr-2' />
+                  근거 추가
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className='text-xl flex items-center justify-between'>
+                  예상 질문 및 답변
+                  <Button
+                    onClick={handleGenerateQuestions}
+                    disabled={
+                      !selectedSubject ||
+                      isGeneratingQuestions ||
+                      reasons.filter((r) => r.trim()).length === 0
+                    }
+                    variant='outline'
+                    size='sm'
+                  >
+                    {isGeneratingQuestions ? (
+                      <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                    ) : (
+                      <Sparkles className='w-4 h-4 mr-2' />
+                    )}
+                    AI 도움
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className='space-y-4'>
+                {questions.map((item, index) => (
+                  <div key={index} className='p-4 border rounded-lg space-y-2'>
+                    <Input
+                      value={item.q}
+                      onChange={(e) =>
+                        handleQuestionChange(index, e.target.value)
+                      }
+                      placeholder={`예상 질문 #${index + 1}`}
+                    />
+                    <Textarea
+                      value={item.a}
+                      onChange={(e) =>
+                        handleAnswerChange(index, e.target.value)
+                      }
+                      placeholder={`답변 #${index + 1}`}
+                    />
+                  </div>
+                ))}
+                <Button onClick={handleAddQuestion} variant='outline' size='sm'>
+                  <PlusCircle className='w-4 h-4 mr-2' />
+                  질문 추가
+                </Button>
+              </CardContent>
+            </Card>
+
+            <div className='flex justify-end space-x-4 mt-8'>
+              <Button variant='ghost' onClick={handleCancel}>
+                <ArrowLeft className='w-4 h-4 mr-2' />
+                취소
+              </Button>
+              <Button onClick={handleSave}>
+                <Save className='w-4 h-4 mr-2' />
+                저장
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
