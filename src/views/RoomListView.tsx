@@ -5,8 +5,22 @@ import { LogIn, Users, Hourglass, Home, Loader2 } from 'lucide-react';
 import { useRoomListViewModel } from '@/viewmodels/RoomListViewModel';
 import CreateRoomModal from '@/components/modals/CreateRoomModal';
 import RoomDetailModal from '@/components/modals/RoomDetailModal';
+import { getRankTitle } from '@/lib/constants';
 
 const RoomListView = () => {
+  // 승률 계산 함수
+  const calculateWinRate = (wins: number, loses: number): number => {
+    const totalGames = wins + loses;
+    return totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+  };
+
+  // 승률에 따른 색상 결정 함수
+  const getWinRateColor = (winRate: number): string => {
+    if (winRate >= 55) return 'text-green-500';
+    if (winRate >= 45) return 'text-yellow-500';
+    return 'text-red-500';
+  };
+
   const {
     // State
     rooms,
@@ -89,20 +103,74 @@ const RoomListView = () => {
                             <p className='font-bold text-xl mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600 break-words line-clamp-2'>
                               {room.subject?.title || 'Unknown Subject'}
                             </p>
-                            <div className='text-sm text-muted-foreground flex items-center'>
-                              <Users className='w-4 h-4 mr-2 text-purple-500' />
-                              <span>{room.players.length}/2 Players</span>
-                              <div className='ml-4 flex space-x-1'>
-                                {[...Array(2)].map((_, i) => (
-                                  <div
-                                    key={i}
-                                    className={`w-2 h-2 rounded-full ${
-                                      i < room.players.length
-                                        ? 'bg-green-500 animate-pulse'
-                                        : 'bg-gray-300 dark:bg-gray-600'
-                                    }`}
-                                  />
-                                ))}
+                            <div className='space-y-3'>
+                              <div className='text-sm text-muted-foreground flex items-center'>
+                                <Users className='w-4 h-4 mr-2 text-purple-500' />
+                                <span>{room.players.length}/2 Players</span>
+                              </div>
+
+                              {/* 플레이어 정보 표시 */}
+                              <div className='space-y-2'>
+                                {[...Array(2)].map((_, i) => {
+                                  const player = room.players[i];
+                                  if (player) {
+                                    const rankInfo = getRankTitle(
+                                      player.rating
+                                    );
+                                    const winRate = calculateWinRate(
+                                      player.wins,
+                                      player.loses
+                                    );
+                                    const winRateColor =
+                                      getWinRateColor(winRate);
+
+                                    return (
+                                      <div
+                                        key={i}
+                                        className='flex items-center text-xs'
+                                      >
+                                        <div className='w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2'></div>
+                                        <div className='flex-grow'>
+                                          <span className='font-medium text-foreground truncate max-w-[120px] inline-block'>
+                                            {getPlayerDisplayName(player)}
+                                          </span>
+                                          <div className='flex items-center space-x-2 mt-1'>
+                                            <span
+                                              className={`font-semibold ${rankInfo.textColor}`}
+                                            >
+                                              {rankInfo.title}
+                                            </span>
+                                            <span
+                                              className={`${rankInfo.textColor}`}
+                                            >
+                                              {Math.floor(player.rating)}⭐
+                                            </span>
+                                            <span className='text-muted-foreground'>
+                                              |
+                                            </span>
+                                            <span
+                                              className={`font-medium ${winRateColor}`}
+                                            >
+                                              {winRate}% 승률
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  } else {
+                                    return (
+                                      <div
+                                        key={i}
+                                        className='flex items-center text-xs'
+                                      >
+                                        <div className='w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 mr-2'></div>
+                                        <span className='text-muted-foreground'>
+                                          대기 중...
+                                        </span>
+                                      </div>
+                                    );
+                                  }
+                                })}
                               </div>
                             </div>
                           </div>

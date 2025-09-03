@@ -50,6 +50,7 @@ export const getRankTitle = (rating: number): RankInfo => {
  * @returns AI가 사용할 언어 수준과 논리적 복잡성 가이드라인
  */
 export const getLanguageLevelPrompt = (rating: number): string => {
+  console.log(rating);
   const rank = getRankTitle(rating);
 
   switch (rank.title) {

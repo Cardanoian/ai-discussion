@@ -31,42 +31,204 @@ export const useDiscussionViewModel = () => {
   } | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [timerInfo, setTimerInfo] = useState<{
+    myPenaltyPoints: number;
+    opponentPenaltyPoints: number;
+    maxPenaltyPoints: number;
+  }>({
+    myPenaltyPoints: 0,
+    opponentPenaltyPoints: 0,
+    maxPenaltyPoints: 18,
+  });
+  const [timerState, setTimerState] = useState<{
+    roundTimeRemaining: number; // 라운드 남은 시간 (초)
+    totalTimeRemaining: number; // 전체 남은 시간 (초)
+    isRunning: boolean;
+    isOvertime: boolean;
+    overtimeRemaining: number; // 연장시간 남은 시간 (초)
+    roundTimeLimit: number; // 라운드 제한 시간 (초)
+    totalTimeLimit: number; // 전체 제한 시간 (초)
+  }>({
+    roundTimeRemaining: 120, // 2분
+    totalTimeRemaining: 300, // 5분
+    isRunning: false,
+    isOvertime: false,
+    overtimeRemaining: 30, // 30초
+    roundTimeLimit: 120,
+    totalTimeLimit: 300,
+  });
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * 타이머를 시작하는 함수
+   */
+  const startTimer = (roundLimit: number, totalRemaining: number) => {
+    console.log('타이머 시작:', { roundLimit, totalRemaining });
+
+    setTimerState((prev) => ({
+      ...prev,
+      roundTimeRemaining: roundLimit,
+      totalTimeRemaining: totalRemaining,
+      isRunning: true,
+      isOvertime: false,
+      roundTimeLimit: roundLimit,
+    }));
+
+    // 기존 타이머 정리
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+    }
+
+    // 새 타이머 시작
+    timerIntervalRef.current = setInterval(() => {
+      setTimerState((prev) => {
+        if (!prev.isRunning) return prev;
+
+        const newRoundTime = prev.roundTimeRemaining - 1;
+        const newTotalTime = prev.totalTimeRemaining - 1;
+
+        // 라운드 시간 초과 체크
+        if (newRoundTime <= 0 && !prev.isOvertime) {
+          // 서버에 시간 초과 신호 전송
+          if (socket && roomId && userId) {
+            socket.emit('time_overflow', {
+              roomId,
+              userId,
+              type: 'round',
+            });
+          }
+
+          return {
+            ...prev,
+            roundTimeRemaining: 0,
+            totalTimeRemaining: Math.max(0, newTotalTime),
+            isOvertime: true,
+            overtimeRemaining: 30,
+          };
+        }
+
+        // 연장시간 체크
+        if (prev.isOvertime) {
+          const newOvertimeTime = prev.overtimeRemaining - 1;
+
+          if (newOvertimeTime <= 0) {
+            // 연장시간도 초과
+            if (socket && roomId && userId) {
+              socket.emit('time_overflow', {
+                roomId,
+                userId,
+                type: 'overtime',
+              });
+            }
+
+            return {
+              ...prev,
+              overtimeRemaining: 0,
+              isRunning: false,
+            };
+          }
+
+          return {
+            ...prev,
+            totalTimeRemaining: Math.max(0, newTotalTime),
+            overtimeRemaining: newOvertimeTime,
+          };
+        }
+
+        // 전체 시간 초과 체크
+        if (newTotalTime <= 0) {
+          if (socket && roomId && userId) {
+            socket.emit('time_overflow', {
+              roomId,
+              userId,
+              type: 'total',
+            });
+          }
+
+          return {
+            ...prev,
+            roundTimeRemaining: Math.max(0, newRoundTime),
+            totalTimeRemaining: 0,
+            isRunning: false,
+          };
+        }
+
+        return {
+          ...prev,
+          roundTimeRemaining: Math.max(0, newRoundTime),
+          totalTimeRemaining: Math.max(0, newTotalTime),
+        };
+      });
+    }, 1000);
+  };
+
+  /**
+   * 타이머를 정지하는 함수
+   */
+  const stopTimer = () => {
+    console.log('타이머 정지');
+    setTimerState((prev) => ({ ...prev, isRunning: false }));
+
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+  };
+
+  /**
+   * 시간을 포맷하는 함수 (초 -> MM:SS)
+   */
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   /**
    * 사용자의 토론 자료를 미리 로드하는 함수
    */
-  const preloadUserDocs = async (subjectId: string, currentUserId: string) => {
+  const preloadUserDocs = async (roomId: string, currentUserId: string) => {
     setIsLoadingDocs(true);
     try {
-      console.log('사용자 자료 미리 로드 시작:', { subjectId, currentUserId });
+      console.log('사용자 자료 미리 로드 시작:', { roomId, currentUserId });
 
+      // roomId로부터 실제 subject_id를 가져오기 위해 rooms 테이블 조회
+      console.log('rooms 테이블 조회 시작, roomId:', roomId);
+      const { data: roomData, error: roomError } = await supabase
+        .from('rooms')
+        .select('subject_id')
+        .eq('uuid', roomId)
+        .single();
+
+      console.log('rooms 테이블 조회 결과:', { roomData, roomError });
+
+      if (roomError || !roomData?.subject_id) {
+        console.error('방 정보 조회 오류:', roomError);
+        console.log('빈 자료로 설정하고 종료');
+        // 방 정보를 가져올 수 없는 경우 빈 자료로 설정
+        setUserDocs({
+          agree: { reasons: [], questions: [] },
+          disagree: { reasons: [], questions: [] },
+        });
+        return;
+      }
+
+      const actualSubjectId = roomData.subject_id;
+      console.log('실제 subject_id:', actualSubjectId);
+
+      // 실제 subject_id로 사용자 자료 조회
+      console.log('사용자 자료 조회 시작:', { actualSubjectId, currentUserId });
       const [agreeData, disagreeData] = await Promise.all([
-        supabase
-          .from('docs')
-          .select('content')
-          .eq('user_uuid', currentUserId)
-          .eq('subject_id', subjectId)
-          .eq('against', false)
-          .single(),
-        supabase
-          .from('docs')
-          .select('content')
-          .eq('user_uuid', currentUserId)
-          .eq('subject_id', subjectId)
-          .eq('against', true)
-          .single(),
+        getUserDocs(actualSubjectId, false), // 찬성 자료
+        getUserDocs(actualSubjectId, true), // 반대 자료
       ]);
 
+      console.log('사용자 자료 조회 완료:', { agreeData, disagreeData });
+
       const processedDocs = {
-        agree: {
-          reasons: agreeData.data?.content?.reasons || [],
-          questions: agreeData.data?.content?.questions || [],
-        },
-        disagree: {
-          reasons: disagreeData.data?.content?.reasons || [],
-          questions: disagreeData.data?.content?.questions || [],
-        },
+        agree: agreeData || { reasons: [], questions: [] },
+        disagree: disagreeData || { reasons: [], questions: [] },
       };
 
       setUserDocs(processedDocs);
@@ -118,31 +280,62 @@ export const useDiscussionViewModel = () => {
 
       // 사용자 프로필 정보 로드 (한 번만)
       try {
+        console.log('사용자 프로필 조회 시작:', currentUserId);
         const { data: profile, error } = await supabase
-          .from('profiles')
+          .from('user_profile')
           .select('*')
           .eq('user_uuid', currentUserId)
           .single();
 
         if (error) {
           console.error('사용자 프로필 조회 오류:', error);
-          // 기본값으로 설정
-          setUserProfile({
+          // 기본값으로 설정 (실버 등급)
+          const defaultProfile = {
             user_uuid: currentUserId,
             display_name: user.email || 'Unknown',
-            rating: 1500,
+            rating: 1600,
             wins: 0,
             loses: 0,
             avatar_url: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          });
+          };
+          setUserProfile(defaultProfile);
+          console.log('기본 프로필 설정:', defaultProfile);
         } else if (profile) {
           setUserProfile(profile);
           console.log('사용자 프로필 로드 완료:', profile);
+        } else {
+          console.log('프로필 데이터가 없음');
+          // 프로필이 없는 경우에도 기본값 설정
+          const defaultProfile = {
+            user_uuid: currentUserId,
+            display_name: user.email || 'Unknown',
+            rating: 1600,
+            wins: 0,
+            loses: 0,
+            avatar_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          setUserProfile(defaultProfile);
+          console.log('기본 프로필 설정 (데이터 없음):', defaultProfile);
         }
       } catch (error) {
         console.error('사용자 프로필 로드 오류:', error);
+        // catch 블록에서도 기본값 설정
+        const defaultProfile = {
+          user_uuid: currentUserId,
+          display_name: user.email || 'Unknown',
+          rating: 1600,
+          wins: 0,
+          loses: 0,
+          avatar_url: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        setUserProfile(defaultProfile);
+        console.log('기본 프로필 설정 (catch):', defaultProfile);
       }
 
       const newSocket = io(
@@ -233,9 +426,18 @@ export const useDiscussionViewModel = () => {
         }) => {
           console.log('받은 turn_info:', data, '현재 userId:', currentUserId);
           setCurrentTurn(data.currentPlayerId);
-          setIsMyTurn(data.currentPlayerId === currentUserId);
+          const isMyNewTurn = data.currentPlayerId === currentUserId;
+          setIsMyTurn(isMyNewTurn);
           setCurrentStage(data.stage);
           setStageDescription(data.stageDescription);
+
+          // 내 턴이 시작되면 타이머 시작
+          if (isMyNewTurn) {
+            startTimer(120, 300); // 2분 라운드, 5분 전체
+          } else {
+            stopTimer(); // 상대방 턴이면 타이머 정지
+          }
+
           setMessages((prev) => {
             // 중복 턴 정보 메시지 방지
             const isDuplicate = prev.some(
@@ -284,6 +486,53 @@ export const useDiscussionViewModel = () => {
         // JSON 형식은 클라이언트에 표시하지 않고, ai_judge_message로만 표시
       });
 
+      // Listen for penalty applied events
+      newSocket.on(
+        'penalty_applied',
+        (data: {
+          userId: string;
+          penaltyPoints: number;
+          maxPenaltyPoints: number;
+          message: string;
+        }) => {
+          console.log('받은 penalty_applied:', data);
+
+          // 감점 정보 업데이트
+          setTimerInfo((prev) => ({
+            ...prev,
+            myPenaltyPoints:
+              data.userId === currentUserId
+                ? data.penaltyPoints
+                : prev.myPenaltyPoints,
+            opponentPenaltyPoints:
+              data.userId !== currentUserId
+                ? data.penaltyPoints
+                : prev.opponentPenaltyPoints,
+            maxPenaltyPoints: data.maxPenaltyPoints,
+          }));
+
+          // 감점 메시지 표시
+          setMessages((prev) => [
+            ...prev,
+            { sender: 'system', text: data.message },
+          ]);
+        }
+      );
+
+      // Listen for overtime granted events
+      newSocket.on(
+        'overtime_granted',
+        (data: { userId: string; overtimeLimit: number; message: string }) => {
+          console.log('받은 overtime_granted:', data);
+
+          // 연장시간 메시지 표시
+          setMessages((prev) => [
+            ...prev,
+            { sender: 'system', text: data.message },
+          ]);
+        }
+      );
+
       // Listen for battle errors
       newSocket.on('battle_error', (error: string) => {
         console.log('받은 battle_error:', error);
@@ -300,40 +549,44 @@ export const useDiscussionViewModel = () => {
       if (socket) {
         socket.disconnect();
       }
+      // 타이머 정리
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
     };
   }, [navigate]); // location.state 의존성 제거
 
-  // 개선된 자동 스크롤 로직
+  // 개선된 자동 스크롤 로직 - 입력창이 보이도록 최적화
   useEffect(() => {
     const scrollToBottom = () => {
       if (scrollAreaRef.current) {
         const scrollContainer = scrollAreaRef.current;
 
-        // 방법 1: 스크롤 앵커 포인트 사용 (가장 정확함)
+        // 방법 1: 스크롤 앵커 포인트 사용 (채팅 영역 내에서만 스크롤)
         const messagesEnd = scrollContainer.querySelector('#messages-end');
         if (messagesEnd) {
           messagesEnd.scrollIntoView({
             behavior: 'smooth',
-            block: 'end',
+            block: 'nearest', // 'end' 대신 'nearest' 사용으로 과도한 스크롤 방지
             inline: 'nearest',
           });
           return;
         }
 
-        // 방법 2: 마지막 자식 요소로 스크롤
+        // 방법 2: 마지막 자식 요소로 스크롤 (채팅 영역 내에서만)
         const lastChild = scrollContainer.lastElementChild;
-        if (lastChild) {
+        if (lastChild && lastChild.id !== 'messages-end') {
           lastChild.scrollIntoView({
             behavior: 'smooth',
-            block: 'end',
+            block: 'nearest', // 'end' 대신 'nearest' 사용
             inline: 'nearest',
           });
           return;
         }
 
-        // 방법 3: 전통적인 scrollTop 방식 (fallback)
+        // 방법 3: 스크롤 컨테이너의 하단으로 스크롤 (입력창 고려하지 않음)
         scrollContainer.scrollTo({
-          top: scrollContainer.scrollHeight,
+          top: scrollContainer.scrollHeight - scrollContainer.clientHeight,
           behavior: 'smooth',
         });
       }
@@ -342,7 +595,7 @@ export const useDiscussionViewModel = () => {
     // 메시지가 있을 때만 스크롤 실행
     if (messages.length > 0) {
       // DOM 업데이트 후 스크롤 실행을 위한 지연
-      const timeoutId = setTimeout(scrollToBottom, 150);
+      const timeoutId = setTimeout(scrollToBottom, 100);
       return () => clearTimeout(timeoutId);
     }
   }, [messages]);
@@ -415,17 +668,13 @@ export const useDiscussionViewModel = () => {
         docs = userPosition === 'agree' ? userDocs.agree : userDocs.disagree;
         console.log('캐시된 자료 사용:', { userPosition, docs });
       } else {
-        // 캐시가 없는 경우 직접 조회 (fallback)
-        console.log('캐시가 없어 직접 조회 시도');
-        const fetchedDocs = await getUserDocs(
-          subject.uuid,
-          userPosition === 'disagree'
-        );
-        docs = fetchedDocs || { reasons: [], questions: [] };
+        // 캐시가 없는 경우 빈 배열 사용 (DB 재조회 방지)
+        console.log('캐시가 없어 빈 자료로 AI 호출:', { userPosition });
+        docs = { reasons: [], questions: [] };
       }
 
-      // 캐시된 사용자 등급 정보 사용 (기본값: 1500)
-      const userRating = userProfile?.rating || 1500;
+      // 캐시된 사용자 등급 정보 사용 (기본값: 1600 - 실버 등급)
+      const userRating = userProfile?.rating || 1600;
       console.log('사용자 등급 정보:', { userRating, userProfile });
 
       // AI에게 도움 요청 (사용자 등급 정보 포함)
@@ -551,5 +800,8 @@ export const useDiscussionViewModel = () => {
     stageDescription,
     userDocs,
     isLoadingDocs,
+    timerInfo,
+    timerState,
+    formatTime,
   };
 };

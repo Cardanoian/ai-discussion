@@ -263,7 +263,7 @@ const RoomDetailModal = ({
                         <div className='flex items-center justify-between text-xs text-muted-foreground'>
                           <div className='flex items-center space-x-3'>
                             <span className='bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent font-semibold'>
-                              레이팅: {player.rating}
+                              레이팅: {Math.floor(player.rating)}
                             </span>
                             <span className='text-green-600 dark:text-green-400'>
                               승: {player.wins}

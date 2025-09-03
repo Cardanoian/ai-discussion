@@ -289,7 +289,7 @@ const ProfileView = () => {
                   </div>
                 </div>
                 <CardTitle className={`text-3xl font-bold ${rank.textColor}`}>
-                  {userStats.rating}
+                  {Math.floor(userStats.rating)}
                 </CardTitle>
                 <CardDescription>레이팅</CardDescription>
               </CardHeader>
