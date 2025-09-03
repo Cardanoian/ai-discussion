@@ -5,6 +5,10 @@ import { getRankTitle } from '@/lib/constants';
 import type { User } from '@supabase/supabase-js';
 import type { UserStats, UserProfile } from '@/models/Profile';
 
+/**
+ * 프로필 화면의 상태와 로직을 관리하는 ViewModel 훅
+ * @returns 프로필 관련 상태와 함수들을 포함한 객체
+ */
 export const useProfileViewModel = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -41,6 +45,10 @@ export const useProfileViewModel = () => {
     };
   }, []);
 
+  /**
+   * 사용자 통계 정보를 가져오는 함수
+   * @param userId - 사용자 ID
+   */
   const fetchUserStats = async (userId: string) => {
     try {
       setLoading(true);
@@ -76,6 +84,10 @@ export const useProfileViewModel = () => {
     }
   };
 
+  /**
+   * 아바타 이미지 업로드를 처리하는 함수
+   * @param event - 파일 입력 이벤트
+   */
   const handleAvatarUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -156,6 +168,9 @@ export const useProfileViewModel = () => {
     }
   };
 
+  /**
+   * 닉네임 업데이트를 처리하는 함수
+   */
   const handleNicknameUpdate = async () => {
     if (!user) return;
 
@@ -182,6 +197,10 @@ export const useProfileViewModel = () => {
     }
   };
 
+  /**
+   * 사용자의 표시명을 가져오는 함수
+   * @returns 사용자의 표시명 또는 기본값
+   */
   const getDisplayName = () => {
     if (userProfile?.display_name) {
       return userProfile.display_name;
@@ -189,6 +208,9 @@ export const useProfileViewModel = () => {
     return user?.user_metadata.full_name || user?.email || user?.id;
   };
 
+  /**
+   * 로그아웃을 처리하는 함수
+   */
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');

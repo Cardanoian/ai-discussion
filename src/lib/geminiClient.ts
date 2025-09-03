@@ -168,3 +168,108 @@ A3: [답변3]
     throw new Error('AI 질문/답변 생성에 실패했습니다. 다시 시도해주세요.');
   }
 };
+
+export const generateDiscussionHelp = async (
+  subject: string,
+  userPosition: 'agree' | 'disagree',
+  currentStage: number,
+  stageDescription: string,
+  discussionLog: Array<{
+    sender: 'pro' | 'con' | 'system' | 'judge';
+    text: string;
+  }>,
+  userReasons: string[],
+  userQuestions: Array<{ q: string; a: string }>
+): Promise<string> => {
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API 키가 설정되지 않았습니다.');
+  }
+
+  // 토론 로그를 읽기 쉽게 정리
+  const formattedLog = discussionLog
+    .filter((msg) => msg.sender === 'pro' || msg.sender === 'con')
+    .map((msg) => {
+      const speaker = msg.sender === 'pro' ? '찬성측' : '반대측';
+      return `${speaker}: ${msg.text}`;
+    })
+    .join('\n');
+
+  // 상대방의 마지막 발언 추출
+  const opponentSender = userPosition === 'agree' ? 'con' : 'pro';
+  const lastOpponentMessage =
+    discussionLog.filter((msg) => msg.sender === opponentSender).slice(-1)[0]
+      ?.text || '';
+
+  // 단계별 전략 안내
+  const getStageStrategy = (stage: number) => {
+    switch (stage) {
+      case 1:
+        return '대표발언 단계입니다. 핵심 주장을 명확하고 강력하게 제시하세요.';
+      case 2:
+        return '대표발언 단계입니다. 상대방 주장의 약점을 파악하며 자신의 입장을 명확히 하세요.';
+      case 3:
+        return '질문 단계입니다. 상대방 주장의 허점을 파고드는 날카로운 질문을 하세요.';
+      case 4:
+        return '답변 및 질문 단계입니다. 상대방 질문에 논리적으로 답변하고 역질문하세요.';
+      case 5:
+        return '답변 단계입니다. 상대방 질문에 설득력 있게 답변하세요.';
+      case 6:
+        return '최종발언 단계입니다. 지금까지의 논의를 정리하고 강력한 마무리를 하세요.';
+      case 7:
+        return '최종발언 단계입니다. 상대방 주장을 반박하며 자신의 입장을 확고히 하세요.';
+      default:
+        return '현재 상황에 맞는 적절한 응답을 하세요.';
+    }
+  };
+
+  const prompt = `
+토론 주제: "${subject}"
+당신의 입장: ${userPosition === 'agree' ? '찬성' : '반대'}
+현재 단계: ${stageDescription} (${currentStage}단계)
+단계별 전략: ${getStageStrategy(currentStage)}
+
+당신이 미리 준비한 근거들:
+${userReasons.map((reason, index) => `${index + 1}. ${reason}`).join('\n')}
+
+당신이 미리 준비한 예상 질문과 답변:
+${userQuestions
+  .map((qa, index) => `Q${index + 1}: ${qa.q}\nA${index + 1}: ${qa.a}`)
+  .join('\n\n')}
+
+현재까지의 토론 내용:
+${formattedLog}
+
+상대방의 마지막 발언: "${lastOpponentMessage}"
+
+위 정보를 바탕으로, 현재 단계에 맞는 효과적인 응답을 작성해주세요.
+
+요구사항:
+1. 당신의 입장(${userPosition === 'agree' ? '찬성' : '반대'})에서 응답하세요
+2. 현재 단계(${stageDescription})의 목적에 맞게 작성하세요
+3. 미리 준비한 근거나 예상 답변을 적절히 활용하세요
+4. 상대방의 마지막 발언에 대한 적절한 대응을 포함하세요
+5. 논리적이고 설득력 있는 한 문장으로 작성하세요
+6. 감정적이지 않고 객관적인 톤을 유지하세요
+
+응답은 반드시 한 문장으로만 작성해주세요.
+`;
+
+  try {
+    const response = await genAI.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { thinkingConfig: { thinkingBudget: 0 } },
+    });
+
+    const suggestion = response.text?.trim() || '';
+
+    if (!suggestion) {
+      throw new Error('AI 응답을 받을 수 없습니다.');
+    }
+
+    return suggestion;
+  } catch (error) {
+    console.error('AI 토론 도움 요청 오류:', error);
+    throw new Error('AI 도움 요청 처리 중 오류가 발생했습니다.');
+  }
+};

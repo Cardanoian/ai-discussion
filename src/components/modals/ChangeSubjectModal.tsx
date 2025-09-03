@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Settings } from 'lucide-react';
+import { Settings, Loader2 } from 'lucide-react';
 import type { Subject } from '@/models/Room';
 
 interface ChangeSubjectModalProps {
@@ -26,6 +26,7 @@ interface ChangeSubjectModalProps {
   selectedSubject: string;
   onSubjectChange: (value: string) => void;
   onChangeSubject: () => void;
+  isChangingSubject?: boolean;
 }
 
 const ChangeSubjectModal = ({
@@ -35,6 +36,7 @@ const ChangeSubjectModal = ({
   selectedSubject,
   onSubjectChange,
   onChangeSubject,
+  isChangingSubject = false,
 }: ChangeSubjectModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -81,10 +83,17 @@ const ChangeSubjectModal = ({
           <Button
             type='submit'
             onClick={onChangeSubject}
-            disabled={!selectedSubject}
+            disabled={!selectedSubject || isChangingSubject}
             className='bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0'
           >
-            주제 변경
+            {isChangingSubject ? (
+              <>
+                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                변경 중...
+              </>
+            ) : (
+              '주제 변경'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

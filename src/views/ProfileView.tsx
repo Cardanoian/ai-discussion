@@ -295,7 +295,7 @@ const ProfileView = () => {
               </CardHeader>
             </Card>
 
-            {/* Win Rate */}
+            {/* Total Games */}
             <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
               <div className='absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
               <CardHeader className='relative text-center'>
@@ -306,9 +306,9 @@ const ProfileView = () => {
                   </div>
                 </div>
                 <CardTitle className='text-3xl font-bold text-blue-600 dark:text-blue-400'>
-                  {userStats.win_rate.toFixed(1)}%
+                  {userStats.total_games}
                 </CardTitle>
-                <CardDescription>승률</CardDescription>
+                <CardDescription>전체 게임</CardDescription>
               </CardHeader>
             </Card>
 
@@ -369,18 +369,16 @@ const ProfileView = () => {
                   <div className='text-sm text-muted-foreground'>승리</div>
                 </div>
                 <div className='text-center'>
-                  <div className='text-2xl font-bold text-gray-600 dark:text-gray-400 mb-1'>
-                    {userStats.total_games > 0
-                      ? userStats.total_games - userStats.wins - userStats.loses
-                      : 0}
-                  </div>
-                  <div className='text-sm text-muted-foreground'>무승부</div>
-                </div>
-                <div className='text-center'>
                   <div className='text-2xl font-bold text-red-600 dark:text-red-400 mb-1'>
                     {userStats.loses}
                   </div>
                   <div className='text-sm text-muted-foreground'>패배</div>
+                </div>
+                <div className='text-center'>
+                  <div className='text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1'>
+                    {userStats.win_rate.toFixed(1)}%
+                  </div>
+                  <div className='text-sm text-muted-foreground'>승률</div>
                 </div>
               </div>
             </CardContent>

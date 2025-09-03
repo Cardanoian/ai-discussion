@@ -51,7 +51,7 @@ const MainView = () => {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant='ghost'
-                  className='flex items-center space-x-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300'
+                  className='flex items-center space-x-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-0 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300 px-4 py-2'
                 >
                   <div className='w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center overflow-hidden'>
                     {avatarUrl ? (
@@ -64,26 +64,26 @@ const MainView = () => {
                       <UserIcon className='w-4 h-4 text-white' />
                     )}
                   </div>
-                  <span className='font-medium'>
-                    {user.user_metadata.full_name || user.email}
-                  </span>
+                  <span className='font-medium'>{user.display_name}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align='end'
-                className='w-56 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20'
+                className='w-56 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 p-2'
               >
-                <DropdownMenuLabel>내 계정</DropdownMenuLabel>
+                <DropdownMenuLabel className='px-2 py-1.5'>
+                  내 계정
+                </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <Link to='/profile'>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem className='px-2 py-2'>
                     <UserIcon className='w-4 h-4 mr-2' />
                     프로필
                   </DropdownMenuItem>
                 </Link>
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className='text-red-600 dark:text-red-400'
+                  className='text-red-600 dark:text-red-400 px-2 py-2'
                 >
                   <LogOut className='w-4 h-4 mr-2' />
                   로그아웃

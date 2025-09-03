@@ -17,6 +17,7 @@ import {
   ThumbsDown,
   Clock,
   X,
+  Loader2,
 } from 'lucide-react';
 import { getRankTitle } from '@/lib/constants';
 import type { Room, Subject, Player } from '@/models/Room';
@@ -39,6 +40,9 @@ interface RoomDetailModalProps {
   onReady: () => void;
   onLeaveRoom: () => void;
   getPlayerDisplayName: (player: Player) => string;
+  isSelectingPosition?: boolean;
+  isGettingReady?: boolean;
+  isChangingSubject?: boolean;
 }
 
 const RoomDetailModal = ({
@@ -58,7 +62,15 @@ const RoomDetailModal = ({
   onReady,
   onLeaveRoom,
   getPlayerDisplayName,
+  isSelectingPosition = false,
+  isGettingReady = false,
+  isChangingSubject = false,
 }: RoomDetailModalProps) => {
+  // 상대방이 선택한 포지션 확인
+  const opponentPosition = currentRoom?.players
+    .filter((player) => player.userId !== userId)
+    .find((player) => player.position)?.position;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className='sm:max-w-[900px] max-h-[80vh] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 overflow-hidden'>
@@ -116,6 +128,7 @@ const RoomDetailModal = ({
                       selectedSubject={selectedSubject}
                       onSubjectChange={onSubjectChange}
                       onChangeSubject={onChangeSubject}
+                      isChangingSubject={isChangingSubject}
                     />
                   </div>
                 )}
@@ -141,29 +154,47 @@ const RoomDetailModal = ({
                   <div className='grid grid-cols-2 gap-3'>
                     <Button
                       variant='outline'
-                      className={`p-4 h-auto cursor-pointer transition-all duration-300 ${
-                        myPosition === 'agree'
-                          ? 'bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg shadow-green-500/20 text-green-700 dark:text-green-300'
-                          : 'bg-transparent hover:bg-green-50/50 dark:hover:bg-green-900/10 border-gray-200 dark:border-gray-700'
+                      disabled={
+                        opponentPosition === 'agree' || isSelectingPosition
+                      }
+                      className={`p-4 h-auto transition-all duration-300 ${
+                        opponentPosition === 'agree' || isSelectingPosition
+                          ? 'cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
+                          : myPosition === 'agree'
+                          ? 'cursor-pointer bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg shadow-green-500/20 text-green-700 dark:text-green-300'
+                          : 'cursor-pointer bg-transparent hover:bg-green-50/50 dark:hover:bg-green-900/10 border-gray-200 dark:border-gray-700'
                       }`}
                       onClick={() => onPositionSelect('agree')}
                     >
                       <div className='flex items-center justify-center space-x-2'>
-                        <ThumbsUp className='w-4 h-4 text-green-600' />
+                        {isSelectingPosition ? (
+                          <Loader2 className='w-4 h-4 text-green-600 animate-spin' />
+                        ) : (
+                          <ThumbsUp className='w-4 h-4 text-green-600' />
+                        )}
                         <span className='text-sm font-medium'>찬성</span>
                       </div>
                     </Button>
                     <Button
                       variant='outline'
-                      className={`p-4 h-auto cursor-pointer transition-all duration-300 ${
-                        myPosition === 'disagree'
-                          ? 'bg-red-50 dark:bg-red-900/20 border-red-500 shadow-lg shadow-red-500/20 text-red-700 dark:text-red-300'
-                          : 'bg-transparent hover:bg-red-50/50 dark:hover:bg-red-900/10 border-gray-200 dark:border-gray-700'
+                      disabled={
+                        opponentPosition === 'disagree' || isSelectingPosition
+                      }
+                      className={`p-4 h-auto transition-all duration-300 ${
+                        opponentPosition === 'disagree' || isSelectingPosition
+                          ? 'cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
+                          : myPosition === 'disagree'
+                          ? 'cursor-pointer bg-red-50 dark:bg-red-900/20 border-red-500 shadow-lg shadow-red-500/20 text-red-700 dark:text-red-300'
+                          : 'cursor-pointer bg-transparent hover:bg-red-50/50 dark:hover:bg-red-900/10 border-gray-200 dark:border-gray-700'
                       }`}
                       onClick={() => onPositionSelect('disagree')}
                     >
                       <div className='flex items-center justify-center space-x-2'>
-                        <ThumbsDown className='w-4 h-4 text-red-600' />
+                        {isSelectingPosition ? (
+                          <Loader2 className='w-4 h-4 text-red-600 animate-spin' />
+                        ) : (
+                          <ThumbsDown className='w-4 h-4 text-red-600' />
+                        )}
                         <span className='text-sm font-medium'>반대</span>
                       </div>
                     </Button>
@@ -275,12 +306,19 @@ const RoomDetailModal = ({
             onClick={onReady}
             disabled={
               !myPosition ||
-              currentRoom?.players.find((p) => p.userId === userId)?.isReady
+              currentRoom?.players.find((p) => p.userId === userId)?.isReady ||
+              isGettingReady
             }
             className='bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white border-0'
           >
-            <Check className='w-4 h-4 mr-2' />
-            {currentRoom?.players.find((p) => p.userId === userId)?.isReady
+            {isGettingReady ? (
+              <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+            ) : (
+              <Check className='w-4 h-4 mr-2' />
+            )}
+            {isGettingReady
+              ? '처리 중...'
+              : currentRoom?.players.find((p) => p.userId === userId)?.isReady
               ? '준비 완료됨'
               : '준비 완료'}
           </Button>

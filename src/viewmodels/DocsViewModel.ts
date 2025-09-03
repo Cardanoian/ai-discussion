@@ -8,6 +8,10 @@ import {
 import type { User } from '@supabase/supabase-js';
 import type { Subject, Question } from '@/models/Docs';
 
+/**
+ * 토론 자료 관리 화면의 상태와 로직을 관리하는 ViewModel 훅
+ * @returns 토론 자료 관련 상태와 함수들을 포함한 객체
+ */
 export const useDocsViewModel = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -41,7 +45,9 @@ export const useDocsViewModel = () => {
     fetchSubjects();
   }, []);
 
-  // 문서 데이터 가져오기
+  /**
+   * 사용자의 토론 자료 문서를 가져오는 함수
+   */
   const fetchDoc = useCallback(async () => {
     if (user && selectedSubject) {
       const { data, error } = await supabase
@@ -77,42 +83,71 @@ export const useDocsViewModel = () => {
     fetchDoc();
   }, [fetchDoc]);
 
-  // 근거 관리 함수들
+  /**
+   * 새로운 근거를 추가하는 함수
+   */
   const handleAddReason = () => setReasons([...reasons, '']);
 
+  /**
+   * 특정 인덱스의 근거 내용을 변경하는 함수
+   * @param index - 변경할 근거의 인덱스
+   * @param value - 새로운 근거 내용
+   */
   const handleReasonChange = (index: number, value: string) => {
     const newReasons = [...reasons];
     newReasons[index] = value;
     setReasons(newReasons);
   };
 
+  /**
+   * 특정 인덱스의 근거를 삭제하는 함수
+   * @param index - 삭제할 근거의 인덱스
+   */
   const handleRemoveReason = (index: number) => {
     const newReasons = reasons.filter((_, i) => i !== index);
     setReasons(newReasons);
   };
 
-  // 질문 관리 함수들
+  /**
+   * 새로운 질문을 추가하는 함수
+   */
   const handleAddQuestion = () =>
     setQuestions([...questions, { q: '', a: '' }]);
 
+  /**
+   * 특정 인덱스의 질문 내용을 변경하는 함수
+   * @param index - 변경할 질문의 인덱스
+   * @param value - 새로운 질문 내용
+   */
   const handleQuestionChange = (index: number, value: string) => {
     const newQuestions = [...questions];
     newQuestions[index].q = value;
     setQuestions(newQuestions);
   };
 
+  /**
+   * 특정 인덱스의 답변 내용을 변경하는 함수
+   * @param index - 변경할 답변의 인덱스
+   * @param value - 새로운 답변 내용
+   */
   const handleAnswerChange = (index: number, value: string) => {
     const newQuestions = [...questions];
     newQuestions[index].a = value;
     setQuestions(newQuestions);
   };
 
+  /**
+   * 특정 인덱스의 질문을 삭제하는 함수
+   * @param index - 삭제할 질문의 인덱스
+   */
   const handleRemoveQuestion = (index: number) => {
     const newQuestions = questions.filter((_, i) => i !== index);
     setQuestions(newQuestions);
   };
 
-  // 저장 함수
+  /**
+   * 토론 자료를 데이터베이스에 저장하는 함수
+   */
   const handleSave = async () => {
     if (!user || !selectedSubject) {
       alert('토론 주제를 먼저 선택해주세요.');
@@ -149,7 +184,9 @@ export const useDocsViewModel = () => {
     }
   };
 
-  // AI 근거 생성
+  /**
+   * AI를 사용하여 토론 근거를 생성하는 함수
+   */
   const handleGenerateArguments = async () => {
     if (!selectedSubject) {
       alert('토론 주제를 먼저 선택해주세요.');
@@ -189,7 +226,9 @@ export const useDocsViewModel = () => {
     }
   };
 
-  // AI 질문/답변 생성
+  /**
+   * AI를 사용하여 질문과 답변을 생성하는 함수
+   */
   const handleGenerateQuestions = async () => {
     if (!selectedSubject) {
       alert('토론 주제를 먼저 선택해주세요.');
@@ -237,7 +276,9 @@ export const useDocsViewModel = () => {
     }
   };
 
-  // 취소 함수
+  /**
+   * 자료 작성을 취소하고 메인 화면으로 이동하는 함수
+   */
   const handleCancel = () => navigate('/main');
 
   return {

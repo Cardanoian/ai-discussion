@@ -6,6 +6,10 @@ import type { Player, Room, Subject } from '@/models/Room';
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
+/**
+ * 대기실 화면의 상태와 로직을 관리하는 ViewModel 훅
+ * @returns 대기실 관련 상태와 함수들을 포함한 객체
+ */
 export const useRoomListViewModel = () => {
   const navigate = useNavigate();
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -24,7 +28,18 @@ export const useRoomListViewModel = () => {
   const [isChangeSubjectOpen, setIsChangeSubjectOpen] = useState(false);
   const [battleCountdown, setBattleCountdown] = useState<number>(0);
 
-  // Helper function to get display name for a player
+  // 로딩 상태들
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [isJoiningRoom, setIsJoiningRoom] = useState(false);
+  const [isSelectingPosition, setIsSelectingPosition] = useState(false);
+  const [isGettingReady, setIsGettingReady] = useState(false);
+  const [isChangingSubject, setIsChangingSubject] = useState(false);
+
+  /**
+   * 플레이어의 표시명을 가져오는 헬퍼 함수
+   * @param player - 플레이어 객체
+   * @returns 플레이어의 표시명 또는 사용자 ID
+   */
   const getPlayerDisplayName = (player: Player) => {
     if (player.displayname && player.displayname.trim() !== '') {
       return player.displayname;
@@ -32,10 +47,20 @@ export const useRoomListViewModel = () => {
     return player.userId;
   };
 
-  // Handle battle start - navigate to discussion view
-  const handleBattleStart = useCallback(() => {
-    navigate('/discussion');
-  }, [navigate]);
+  /**
+   * 토론 시작을 처리하고 토론 화면으로 이동하는 함수
+   * @param roomId - 방 ID (선택사항)
+   */
+  const handleBattleStart = useCallback(
+    (roomId?: string) => {
+      if (roomId) {
+        navigate('/discussion', { state: { roomId } });
+      } else {
+        navigate('/discussion');
+      }
+    },
+    [navigate]
+  );
 
   useEffect(() => {
     // Get user authentication info
@@ -98,17 +123,38 @@ export const useRoomListViewModel = () => {
       }
     });
 
+    // Handle battle start event from server
+    newSocket.on('battle_start', (room: Room) => {
+      console.log('Battle started for room:', room.roomId);
+      // Close room modal and navigate to discussion
+      setIsRoomModalOpen(false);
+      handleBattleStart(room.roomId);
+    });
+
+    // Handle position selection confirmation
+    newSocket.on(
+      'position_selected',
+      (data: { position: 'agree' | 'disagree' | null }) => {
+        setMyPosition(data.position);
+      }
+    );
+
     return () => {
       newSocket.disconnect();
     };
   }, [handleBattleStart, userId]);
 
+  /**
+   * 새로운 방을 생성하는 함수
+   */
   const handleCreateRoom = () => {
-    if (selectedSubject && socket && userId) {
+    if (selectedSubject && socket && userId && !isCreatingRoom) {
+      setIsCreatingRoom(true);
       socket.emit(
         'create_room',
         { userId, subjectId: selectedSubject },
         (ack: { room?: Room; error?: string }) => {
+          setIsCreatingRoom(false);
           if (ack.room) {
             setCurrentRoom(ack.room);
             setIsRoomModalOpen(true);
@@ -122,12 +168,18 @@ export const useRoomListViewModel = () => {
     }
   };
 
+  /**
+   * 기존 방에 참가하는 함수
+   * @param roomId - 참가할 방의 ID
+   */
   const handleJoinRoom = (roomId: string) => {
-    if (socket && userId) {
+    if (socket && userId && !isJoiningRoom) {
+      setIsJoiningRoom(true);
       socket.emit(
         'join_room',
         { roomId, userId },
         (ack: { room?: Room; error?: string }) => {
+          setIsJoiningRoom(false);
           if (ack.room) {
             setCurrentRoom(ack.room);
             setIsRoomModalOpen(true);
@@ -139,6 +191,9 @@ export const useRoomListViewModel = () => {
     }
   };
 
+  /**
+   * 현재 방에서 나가는 함수
+   */
   const handleLeaveRoom = () => {
     if (socket && currentRoom) {
       socket.emit('leave_room', { roomId: currentRoom.roomId, userId });
@@ -148,12 +203,17 @@ export const useRoomListViewModel = () => {
     setMyPosition(null);
   };
 
+  /**
+   * 방의 토론 주제를 변경하는 함수
+   */
   const handleChangeSubject = () => {
-    if (selectedSubject && socket && currentRoom) {
+    if (selectedSubject && socket && currentRoom && !isChangingSubject) {
+      setIsChangingSubject(true);
       socket.emit(
         'change_room_subject',
         { roomId: currentRoom.roomId, subjectId: selectedSubject },
         (ack: { success?: boolean; error?: string }) => {
+          setIsChangingSubject(false);
           if (ack.success) {
             setIsChangeSubjectOpen(false);
           } else {
@@ -164,57 +224,56 @@ export const useRoomListViewModel = () => {
     }
   };
 
+  /**
+   * 토론 입장(찬성/반대)을 선택하는 함수
+   * @param position - 선택할 입장 ('agree' 또는 'disagree')
+   */
   const handlePositionSelect = (position: 'agree' | 'disagree') => {
-    // TODO: Deploy 시 삭제
-    console.log(
-      `socket: ${socket}
-currentRoom: ${currentRoom}
-userId: ${userId}
-myPosition: ${myPosition}
-position: ${position}`
-    );
-
-    if (!socket || !currentRoom || !userId) {
+    if (!socket || !currentRoom || !userId || isSelectingPosition) {
       return;
     }
+
+    setIsSelectingPosition(true);
+
     // 같은 입장을 다시 클릭하면 선택 취소
     if (myPosition === position) {
-      socket.emit(
-        'select_position',
-        { roomId: currentRoom.roomId, userId, position: null },
-        (ack: { success?: boolean; error?: string }) => {
-          if (ack.success) {
-            setMyPosition(null);
-          } else {
-            alert(ack.error || '입장 선택 취소에 실패했습니다.');
-          }
-        }
-      );
+      socket.emit('select_position', {
+        roomId: currentRoom.roomId,
+        userId,
+        position: null,
+      });
     } else {
-      socket.emit(
-        'select_position',
-        { roomId: currentRoom.roomId, userId, position },
-        (ack: { success?: boolean; error?: string }) => {
-          if (ack.success) {
-            setMyPosition(position);
-          } else {
-            alert(ack.error || '입장 선택에 실패했습니다.');
-          }
-        }
-      );
+      socket.emit('select_position', {
+        roomId: currentRoom.roomId,
+        userId,
+        position,
+      });
     }
-    // TODO: Deploy 시 삭제
-    console.log(`userId: ${userId}
-myPosition: ${myPosition}
-position: ${position}`);
+
+    // 입장 선택은 빠르게 처리되므로 짧은 시간 후 로딩 해제
+    setTimeout(() => {
+      setIsSelectingPosition(false);
+    }, 500);
   };
 
+  /**
+   * 토론 준비 완료를 알리는 함수
+   */
   const handleReady = () => {
-    if (socket && currentRoom && userId && myPosition) {
+    if (socket && currentRoom && userId && myPosition && !isGettingReady) {
+      setIsGettingReady(true);
       socket.emit('player_ready', { roomId: currentRoom.roomId, userId });
+
+      // 준비 완료는 빠르게 처리되므로 짧은 시간 후 로딩 해제
+      setTimeout(() => {
+        setIsGettingReady(false);
+      }, 500);
     }
   };
 
+  /**
+   * 메인 화면으로 이동하는 함수
+   */
   const handleGoToMain = () => {
     navigate('/');
   };
@@ -231,6 +290,13 @@ position: ${position}`);
     myPosition,
     isChangeSubjectOpen,
     battleCountdown,
+
+    // Loading states
+    isCreatingRoom,
+    isJoiningRoom,
+    isSelectingPosition,
+    isGettingReady,
+    isChangingSubject,
 
     // Setters
     setSelectedSubject,

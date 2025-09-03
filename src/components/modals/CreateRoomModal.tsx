@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import type { Subject } from '@/models/Room';
 
 interface CreateRoomModalProps {
@@ -26,6 +26,7 @@ interface CreateRoomModalProps {
   selectedSubject: string;
   onSubjectChange: (value: string) => void;
   onCreateRoom: () => void;
+  isCreatingRoom?: boolean;
 }
 
 const CreateRoomModal = ({
@@ -35,6 +36,7 @@ const CreateRoomModal = ({
   selectedSubject,
   onSubjectChange,
   onCreateRoom,
+  isCreatingRoom = false,
 }: CreateRoomModalProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -76,10 +78,17 @@ const CreateRoomModal = ({
           <Button
             type='submit'
             onClick={onCreateRoom}
-            disabled={!selectedSubject}
+            disabled={!selectedSubject || isCreatingRoom}
             className='bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0'
           >
-            방 만들기
+            {isCreatingRoom ? (
+              <>
+                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                생성 중...
+              </>
+            ) : (
+              '방 만들기'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,3 @@
-// 사용자 관련 타입 정의
-
 export interface UserProfile {
   user_uuid: string;
   display_name: string;
