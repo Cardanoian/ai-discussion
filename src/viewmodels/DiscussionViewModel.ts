@@ -4,6 +4,7 @@ import io, { Socket } from 'socket.io-client';
 import { supabase } from '@/lib/supabaseClient';
 import { generateDiscussionHelp } from '@/lib/geminiClient';
 import type { Message } from '@/models/Discussion';
+import type { UserProfile } from '@/models/Profile';
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -29,6 +30,7 @@ export const useDiscussionViewModel = () => {
     disagree: { reasons: string[]; questions: { q: string; a: string }[] };
   } | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   /**
@@ -113,6 +115,35 @@ export const useDiscussionViewModel = () => {
 
       const currentUserId = user.id;
       setUserId(currentUserId);
+
+      // 사용자 프로필 정보 로드 (한 번만)
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_uuid', currentUserId)
+          .single();
+
+        if (error) {
+          console.error('사용자 프로필 조회 오류:', error);
+          // 기본값으로 설정
+          setUserProfile({
+            user_uuid: currentUserId,
+            display_name: user.email || 'Unknown',
+            rating: 1500,
+            wins: 0,
+            loses: 0,
+            avatar_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+        } else if (profile) {
+          setUserProfile(profile);
+          console.log('사용자 프로필 로드 완료:', profile);
+        }
+      } catch (error) {
+        console.error('사용자 프로필 로드 오류:', error);
+      }
 
       const newSocket = io(
         process.env.NODE_ENV == 'production'
@@ -272,10 +303,47 @@ export const useDiscussionViewModel = () => {
     };
   }, [navigate]); // location.state 의존성 제거
 
-  // 자동 스크롤 로직
+  // 개선된 자동 스크롤 로직
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    const scrollToBottom = () => {
+      if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current;
+
+        // 방법 1: 스크롤 앵커 포인트 사용 (가장 정확함)
+        const messagesEnd = scrollContainer.querySelector('#messages-end');
+        if (messagesEnd) {
+          messagesEnd.scrollIntoView({
+            behavior: 'smooth',
+            block: 'end',
+            inline: 'nearest',
+          });
+          return;
+        }
+
+        // 방법 2: 마지막 자식 요소로 스크롤
+        const lastChild = scrollContainer.lastElementChild;
+        if (lastChild) {
+          lastChild.scrollIntoView({
+            behavior: 'smooth',
+            block: 'end',
+            inline: 'nearest',
+          });
+          return;
+        }
+
+        // 방법 3: 전통적인 scrollTop 방식 (fallback)
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
+    };
+
+    // 메시지가 있을 때만 스크롤 실행
+    if (messages.length > 0) {
+      // DOM 업데이트 후 스크롤 실행을 위한 지연
+      const timeoutId = setTimeout(scrollToBottom, 150);
+      return () => clearTimeout(timeoutId);
     }
   }, [messages]);
 
@@ -356,7 +424,11 @@ export const useDiscussionViewModel = () => {
         docs = fetchedDocs || { reasons: [], questions: [] };
       }
 
-      // AI에게 도움 요청
+      // 캐시된 사용자 등급 정보 사용 (기본값: 1500)
+      const userRating = userProfile?.rating || 1500;
+      console.log('사용자 등급 정보:', { userRating, userProfile });
+
+      // AI에게 도움 요청 (사용자 등급 정보 포함)
       const suggestion = await generateDiscussionHelp(
         subject.title,
         userPosition,
@@ -364,7 +436,8 @@ export const useDiscussionViewModel = () => {
         stageDescription,
         messages,
         docs.reasons,
-        docs.questions
+        docs.questions,
+        userRating
       );
 
       return suggestion;

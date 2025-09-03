@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useDiscussionViewModel } from '@/viewmodels/DiscussionViewModel';
 import type { Message } from '@/models/Discussion';
 import { useState } from 'react';
@@ -183,7 +183,7 @@ const DiscussionView = () => {
         <div className='flex-grow flex flex-col'>
           <div
             ref={scrollAreaRef}
-            className='flex-grow p-6 space-y-4 overflow-y-auto bg-transparent'
+            className='flex-grow p-6 space-y-4 overflow-y-auto bg-transparent scroll-smooth'
           >
             {messages.length === 0 ? (
               <div className='flex flex-col items-center justify-center h-full text-muted-foreground'>
@@ -197,7 +197,11 @@ const DiscussionView = () => {
                 </p>
               </div>
             ) : (
-              messages.map(renderMessage)
+              <>
+                {messages.map(renderMessage)}
+                {/* 스크롤 앵커 포인트 */}
+                <div id='messages-end' className='h-1' />
+              </>
             )}
           </div>
 
@@ -205,18 +209,19 @@ const DiscussionView = () => {
           {!battleEnded ? (
             <Card className='mt-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-0 shadow-xl'>
               <CardContent className='p-4'>
-                <div className='flex gap-3 items-center'>
-                  <Input
+                <div className='flex gap-3 items-end'>
+                  <Textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
+                    onKeyDown={handleKeyPress}
                     placeholder={
                       isMyTurn
-                        ? '당신의 차례입니다. 메시지를 입력하세요...'
+                        ? '당신의 차례입니다. 메시지를 입력하세요... (Shift+Enter로 줄바꿈)'
                         : '상대방의 차례를 기다리는 중...'
                     }
                     disabled={!isMyTurn}
-                    className='flex-grow bg-white/50 dark:bg-slate-800/50 border-white/20'
+                    className='flex-grow bg-white/50 dark:bg-slate-800/50 border-white/20 min-h-12 max-h-32 resize-none'
+                    rows={1}
                   />
                   <Button
                     onClick={handleAiHelp}
@@ -240,7 +245,7 @@ const DiscussionView = () => {
                 </div>
                 {isMyTurn && (
                   <p className='text-xs text-muted-foreground mt-2'>
-                    Enter를 눌러 메시지를 전송하세요
+                    Enter를 눌러 메시지를 전송하세요 (Shift+Enter로 줄바꿈)
                   </p>
                 )}
               </CardContent>

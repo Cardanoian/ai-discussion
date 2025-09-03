@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { getLanguageLevelPrompt } from '@/lib/constants';
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -32,6 +33,11 @@ ${
 - 실제 사례나 데이터 포함하지 않음
 - 상대방이 반박하기 어려운 강력한 논점
 - ${positionText} 입장을 뒷받침하는 명확한 논리
+
+말투 가이드라인:
+- 청소년이 자연스럽게 사용할 수 있는 높임말을 사용하세요 (예: "~해요", "~이에요")
+- 극존칭이나 과도하게 격식적인 표현은 피하세요 (예: "~하겠습니다", "~라고 사료됩니다" 금지)
+- 듣는이를 지칭하는 표현을 절대 사용하지 마세요 (예: "존경하는 토론자분들께", "여러분" 등 금지)
 
 응답 형식: 
 - 각 근거를 별도의 줄로 구분하여 작성해주세요. 
@@ -108,6 +114,11 @@ ${
 - 구체적인 근거나 사례는 포함하지 않음
 - 상대방을 납득시킬 수 있는 내용
 
+말투 가이드라인:
+- 청소년이 자연스럽게 사용할 수 있는 높임말을 사용하세요 (예: "~해요", "~이에요")
+- 극존칭이나 과도하게 격식적인 표현은 피하세요 (예: "~하겠습니다", "~라고 사료됩니다" 금지)
+- 듣는이를 지칭하는 표현을 절대 사용하지 마세요 (예: "존경하는 토론자분들께", "여러분" 등 금지)
+
 응답 형식:
 Q1: [질문1]
 A1: [답변1]
@@ -179,7 +190,8 @@ export const generateDiscussionHelp = async (
     text: string;
   }>,
   userReasons: string[],
-  userQuestions: Array<{ q: string; a: string }>
+  userQuestions: Array<{ q: string; a: string }>,
+  userRating: number = 1500
 ): Promise<string> => {
   if (!GEMINI_API_KEY) {
     throw new Error('Gemini API 키가 설정되지 않았습니다.');
@@ -200,33 +212,63 @@ export const generateDiscussionHelp = async (
     discussionLog.filter((msg) => msg.sender === opponentSender).slice(-1)[0]
       ?.text || '';
 
-  // 단계별 전략 안내
-  const getStageStrategy = (stage: number) => {
+  // 단계별 전략 안내 및 응답 형식 결정
+  const getStageInfo = (stage: number) => {
     switch (stage) {
       case 1:
-        return '대표발언 단계입니다. 핵심 주장을 명확하고 강력하게 제시하세요.';
       case 2:
-        return '대표발언 단계입니다. 상대방 주장의 약점을 파악하며 자신의 입장을 명확히 하세요.';
+        return {
+          strategy:
+            stage === 1
+              ? '대표발언 단계입니다. 핵심 주장을 명확하고 강력하게 제시하세요.'
+              : '대표발언 단계입니다. 상대방 주장의 약점을 파악하며 자신의 입장을 명확히 하세요.',
+          responseType: 'answer_only',
+        };
       case 3:
-        return '질문 단계입니다. 상대방 주장의 허점을 파고드는 날카로운 질문을 하세요.';
+        return {
+          strategy:
+            '질문 단계입니다. 상대방 주장과 근거의 허점을 파고드는 질문을 하세요.',
+          responseType: 'question_only',
+        };
       case 4:
-        return '답변 및 질문 단계입니다. 상대방 질문에 논리적으로 답변하고 역질문하세요.';
       case 5:
-        return '답변 단계입니다. 상대방 질문에 설득력 있게 답변하세요.';
       case 6:
-        return '최종발언 단계입니다. 지금까지의 논의를 정리하고 강력한 마무리를 하세요.';
+        return {
+          strategy:
+            '답변 및 질문 단계입니다. 상대방 질문에 논리적으로 답변하고 상대방 주장과 근거의 허점을 파고드는 질문을 하세요.',
+          responseType: 'answer_and_question',
+        };
       case 7:
-        return '최종발언 단계입니다. 상대방 주장을 반박하며 자신의 입장을 확고히 하세요.';
+        return {
+          strategy: '답변 단계입니다. 상대방 질문에 설득력 있게 답변하세요.',
+          responseType: 'answer_only',
+        };
+      case 8:
+      case 9:
+        return {
+          strategy:
+            '최종발언 단계입니다. 지금까지의 논의를 정리하고 강력한 마무리를 하세요.',
+          responseType: 'answer_only',
+        };
       default:
-        return '현재 상황에 맞는 적절한 응답을 하세요.';
+        return {
+          strategy: '현재 상황에 맞는 적절한 응답을 하세요.',
+          responseType: 'answer_only',
+        };
     }
   };
 
-  const prompt = `
+  const stageInfo = getStageInfo(currentStage);
+
+  // 사용자 등급에 따른 언어 수준 가이드라인 가져오기
+  const languageLevelGuide = getLanguageLevelPrompt(userRating);
+
+  // 단계별 프롬프트 생성
+  let prompt = `
 토론 주제: "${subject}"
 당신의 입장: ${userPosition === 'agree' ? '찬성' : '반대'}
 현재 단계: ${stageDescription} (${currentStage}단계)
-단계별 전략: ${getStageStrategy(currentStage)}
+단계별 전략: ${stageInfo.strategy}
 
 당신이 미리 준비한 근거들:
 ${userReasons.map((reason, index) => `${index + 1}. ${reason}`).join('\n')}
@@ -243,16 +285,48 @@ ${formattedLog}
 
 위 정보를 바탕으로, 현재 단계에 맞는 효과적인 응답을 작성해주세요.
 
-요구사항:
+기본 요구사항:
 1. 당신의 입장(${userPosition === 'agree' ? '찬성' : '반대'})에서 응답하세요
 2. 현재 단계(${stageDescription})의 목적에 맞게 작성하세요
-3. 미리 준비한 근거나 예상 답변을 적절히 활용하세요
+3. 미리 준비한 근거나 예상 답변을 바탕으로 대답하세요
 4. 상대방의 마지막 발언에 대한 적절한 대응을 포함하세요
-5. 논리적이고 설득력 있는 한 문장으로 작성하세요
+5. 논리적이고 설득력 있게 작성하세요
 6. 감정적이지 않고 객관적인 톤을 유지하세요
 
-응답은 반드시 한 문장으로만 작성해주세요.
+말투 및 표현 가이드라인:
+- 청소년이 자연스럽게 사용할 수 있는 높임말을 사용하세요
+- 극존칭이나 과도하게 격식적인 표현은 피하세요
+- 듣는이를 지칭하는 표현을 절대 사용하지 마세요 (예: "존경하는 찬성측 토론자분들께", "토론자 여러분", "~분들께" 등 금지)
+- 상대방을 직접 호명하거나 지칭하는 표현도 피하세요
+- 자연스럽고 친근한 톤을 유지하되 논리적 근거는 명확히 제시하세요
+
+언어 수준 및 논리적 복잡성 가이드라인:
+${languageLevelGuide}
 `;
+
+  // 단계별 응답 형식 추가
+  if (stageInfo.responseType === 'question_only') {
+    prompt += `
+
+응답 형식: 질문만 작성
+- 상대방 주장의 약점을 파고드는 날카로운 질문 한 문장을 작성하세요
+- "답변:" 없이 질문만 작성하세요
+- 질문은 상대방이 답변하기 어려운 핵심적인 내용이어야 합니다`;
+  } else if (stageInfo.responseType === 'answer_and_question') {
+    prompt += `
+
+응답 형식: 답변 + 질문
+- 먼저 상대방의 질문이나 주장에 대한 답변을 한 문장으로 작성하세요
+- 그 다음 줄바꿈 후 상대방에게 할 질문을 한 문장으로 작성하세요
+- 형식: "[답변 내용]\n[질문 내용]"
+- 답변과 질문 모두 간결하고 명확하게 작성하세요`;
+  } else {
+    prompt += `
+
+응답 형식: 답변만 작성
+- 상대방의 주장이나 질문에 대한 답변을 한 문장으로 작성하세요
+- 질문 없이 답변만 작성하세요`;
+  }
 
   try {
     const response = await genAI.models.generateContent({
