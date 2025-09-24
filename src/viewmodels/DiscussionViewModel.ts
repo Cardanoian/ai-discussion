@@ -338,11 +338,7 @@ export const useDiscussionViewModel = () => {
         console.log('기본 프로필 설정 (catch):', defaultProfile);
       }
 
-      const newSocket = io(
-        process.env.NODE_ENV == 'production'
-          ? serverUrl
-          : 'http://localhost:3050'
-      );
+      const newSocket = io(serverUrl);
       setSocket(newSocket);
 
       newSocket.on('connect', () => {

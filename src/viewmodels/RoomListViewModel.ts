@@ -74,9 +74,7 @@ export const useRoomListViewModel = () => {
     };
     getUser();
 
-    const newSocket = io(
-      process.env.NODE_ENV == 'production' ? serverUrl : 'http://localhost:3050'
-    );
+    const newSocket = io(serverUrl);
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
