@@ -64,8 +64,6 @@ export const useDiscussionViewModel = () => {
    * 타이머를 시작하는 함수
    */
   const startTimer = (roundLimit: number, totalRemaining: number) => {
-    console.log('타이머 시작:', { roundLimit, totalRemaining });
-
     setTimerState((prev) => ({
       ...prev,
       roundTimeRemaining: roundLimit,
@@ -167,7 +165,6 @@ export const useDiscussionViewModel = () => {
    * 타이머를 정지하는 함수
    */
   const stopTimer = () => {
-    console.log('타이머 정지');
     setTimerState((prev) => ({ ...prev, isRunning: false }));
 
     if (timerIntervalRef.current) {

@@ -78,7 +78,6 @@ export const useRoomListViewModel = () => {
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      console.log('Connected to socket server:', newSocket.id);
       newSocket.emit('get_rooms', (data: { rooms: Room[] }) => {
         setRooms(data.rooms);
       });
@@ -87,9 +86,7 @@ export const useRoomListViewModel = () => {
       newSocket.emit(
         'get_subjects',
         (data: { subjects?: Subject[]; error?: string }) => {
-          console.log('Received subjects data:', data);
           if (data.subjects) {
-            console.log('Setting subjects:', data.subjects);
             setSubjects(data.subjects);
           } else if (data.error) {
             console.error('Error fetching subjects:', data.error);
@@ -123,7 +120,6 @@ export const useRoomListViewModel = () => {
 
     // Handle battle start event from server
     newSocket.on('battle_start', (room: Room) => {
-      console.log('Battle started for room:', room.roomId);
       // Close room modal and navigate to discussion
       setIsRoomModalOpen(false);
       handleBattleStart(room.roomId);
