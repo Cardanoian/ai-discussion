@@ -18,7 +18,7 @@ npm --version
 
 # 의존성 설치
 echo "📦 의존성 설치 중..."
-npm ci
+npm i
 
 # Terser 설치 확인 및 설치
 echo "🔧 빌드 도구 확인 중..."
@@ -63,12 +63,12 @@ fi
 
 # Nginx 설정 파일 생성
 echo "🔧 Nginx 설정 파일 생성 중..."
-cat > nginx-ai-discussion.conf << 'EOF'
+cat > ai-debate.conf << 'EOF'
 server {
     listen 80;
     listen 8080;
     server_name _;
-    root /var/www/ai-discussion;
+    root /var/www/ai-debate;
     index index.html;
 
     # SPA 라우팅을 위한 설정
@@ -93,12 +93,12 @@ server {
 server {
     listen 443 ssl http2;
     server_name _;
-    root /var/www/ai-discussion;
+    root /var/www/ai-debate;
     index index.html;
 
     # SSL 인증서 경로 (실제 경로로 수정 필요)
-    # ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
+    # ssl_certificate /etc/letsencrypt/live/debate.gbeai.net/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/debate.gbeai.net/privkey.pem;
 
     # SPA 라우팅을 위한 설정
     location / {
@@ -119,37 +119,37 @@ server {
 }
 EOF
 
-echo "✅ Nginx 설정 파일 생성 완료: nginx-ai-discussion.conf"
+echo "✅ Nginx 설정 파일 생성 완료: ai-debate.conf"
 
 # 배포 디렉토리 생성 및 파일 복사
 echo "📁 배포 디렉토리 설정 중..."
-if [ -d "/var/www/ai-discussion" ]; then
+if [ -d "/var/www/ai-debate" ]; then
     echo "🗑️  기존 배포 파일 백업 중..."
-    sudo mv /var/www/ai-discussion /var/www/ai-discussion.backup.$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
+    sudo mv /var/www/ai-debate /var/www/ai-debate.backup.$(date +%Y%m%d_%H%M%S) 2>/dev/null || true
 fi
 
 echo "📂 새 배포 디렉토리 생성 중..."
-sudo mkdir -p /var/www/ai-discussion
+sudo mkdir -p /var/www/ai-debate
 
 echo "📋 빌드 파일 복사 중..."
-sudo cp -r dist/* /var/www/ai-discussion/
+sudo cp -r dist/* /var/www/ai-debate/
 
 echo "🔐 파일 권한 설정 중..."
-sudo chown -R www-data:www-data /var/www/ai-discussion
-sudo chmod -R 755 /var/www/ai-discussion
+sudo chown -R www-data:www-data /var/www/ai-debate
+sudo chmod -R 755 /var/www/ai-debate
 
 echo ""
 echo "🎉 배포 완료!"
 echo ""
 echo "📋 다음 단계:"
 echo "1. Nginx 설정 파일 적용:"
-echo "   sudo cp nginx-ai-discussion.conf /etc/nginx/sites-available/"
-echo "   sudo ln -sf /etc/nginx/sites-available/nginx-ai-discussion.conf /etc/nginx/sites-enabled/"
+echo "   sudo cp ai-debate.conf /etc/nginx/sites-available/"
+echo "   sudo ln -sf /etc/nginx/sites-available/ai-debate.conf /etc/nginx/sites-enabled/"
 echo "   sudo nginx -t"
 echo "   sudo systemctl reload nginx"
 echo ""
 echo "2. SSL 인증서 설정 (선택사항):"
-echo "   sudo certbot --nginx -d yourdomain.com"
+echo "   sudo certbot --nginx -d debate.gbeai.net"
 echo ""
 echo "3. 방화벽 설정 확인:"
 echo "   sudo ufw allow 80"
