@@ -1,0 +1,151 @@
+import { supabase } from './supabaseClient';
+
+const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3050';
+
+/**
+ * 인증된 API 요청을 위한 헤더를 가져오는 함수
+ */
+const getAuthHeaders = async () => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.access_token) {
+    throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${session.access_token}`,
+  };
+};
+
+/**
+ * AI를 사용하여 토론 근거를 생성하는 함수
+ */
+export const generateArguments = async (
+  subject: string,
+  existingReasons: string[],
+  isAgainst: boolean = false
+): Promise<string[]> => {
+  try {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/gemini/generate-arguments`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          subject,
+          existingReasons,
+          isAgainst,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'API 요청에 실패했습니다.');
+    }
+
+    const data = await response.json();
+    return data.arguments || [];
+  } catch (error) {
+    console.error('AI 근거 생성 오류:', error);
+    throw error instanceof Error
+      ? error
+      : new Error('AI 근거 생성에 실패했습니다.');
+  }
+};
+
+/**
+ * AI를 사용하여 질문과 답변을 생성하는 함수
+ */
+export const generateQuestionsAndAnswers = async (
+  subject: string,
+  reasons: string[],
+  existingQuestions: { q: string; a: string }[]
+): Promise<{ q: string; a: string }[]> => {
+  try {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/gemini/generate-questions`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          subject,
+          reasons,
+          existingQuestions,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'API 요청에 실패했습니다.');
+    }
+
+    const data = await response.json();
+    return data.questions || [];
+  } catch (error) {
+    console.error('AI 질문/답변 생성 오류:', error);
+    throw error instanceof Error
+      ? error
+      : new Error('AI 질문/답변 생성에 실패했습니다.');
+  }
+};
+
+/**
+ * AI를 사용하여 토론 도움말을 생성하는 함수
+ */
+export const generateDiscussionHelp = async (
+  subject: string,
+  userPosition: 'agree' | 'disagree',
+  currentStage: number,
+  stageDescription: string,
+  discussionLog: Array<{
+    sender: 'pro' | 'con' | 'system' | 'judge';
+    text: string;
+  }>,
+  userReasons: string[],
+  userQuestions: Array<{ q: string; a: string }>,
+  userRating: number = 1500
+): Promise<string> => {
+  try {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/gemini/generate-discussion-help`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          subject,
+          userPosition,
+          currentStage,
+          stageDescription,
+          discussionLog,
+          userReasons,
+          userQuestions,
+          userRating,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'API 요청에 실패했습니다.');
+    }
+
+    const data = await response.json();
+    return data.suggestion || '';
+  } catch (error) {
+    console.error('AI 토론 도움 요청 오류:', error);
+    throw error instanceof Error
+      ? error
+      : new Error('AI 도움 요청 처리 중 오류가 발생했습니다.');
+  }
+};

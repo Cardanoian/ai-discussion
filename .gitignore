@@ -25,3 +25,4 @@ dist-ssr
 .env
 .claude
 .env.production
+/discussion-server

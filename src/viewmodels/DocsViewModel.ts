@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
   generateArguments,
   generateQuestionsAndAnswers,
-} from '@/lib/geminiClient';
+} from '@/lib/apiClient';
 import type { User } from '@supabase/supabase-js';
 import type { Subject, Question } from '@/models/Docs';
 

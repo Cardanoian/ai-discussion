@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import { supabase } from '@/lib/supabaseClient';
-import { generateDiscussionHelp } from '@/lib/geminiClient';
+import { generateDiscussionHelp } from '@/lib/apiClient';
 import type { Message } from '@/models/Discussion';
 import type { UserProfile } from '@/models/Profile';
 
