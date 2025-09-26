@@ -67,7 +67,7 @@ cat > ai-debate.conf << 'EOF'
 server {
     listen 80;
     listen 8080;
-    server_name _;
+    server_name debate.gbeai.net;
     root /var/www/ai-debate;
     index index.html;
 
@@ -92,7 +92,7 @@ server {
 # HTTPS 설정 (SSL 인증서가 있는 경우)
 server {
     listen 443 ssl http2;
-    server_name _;
+    server_name debate.gbeai.net;
     root /var/www/ai-debate;
     index index.html;
 
