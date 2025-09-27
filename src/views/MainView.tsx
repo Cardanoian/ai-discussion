@@ -7,26 +7,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  LogOut,
-  User as UserIcon,
-  Sparkles,
-  BrainCircuit,
-  ArrowRight,
-} from 'lucide-react';
+import { Sparkles, BrainCircuit, ArrowRight } from 'lucide-react';
 import { useMainViewModel } from '@/viewmodels/MainViewModel';
-import { getRankTitle } from '@/lib/constants';
+import ProfileButton from '@/components/ProfileButton';
 
 const MainView = () => {
-  const { user, handleLogout } = useMainViewModel();
+  const { userProfile } = useMainViewModel();
 
   return (
     <div className='flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50'>
@@ -47,49 +33,7 @@ const MainView = () => {
               AI 토론 배틀
             </h1>
           </div>
-          {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant='ghost'
-                  className='flex items-center space-x-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-0 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300 px-4 py-2'
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      user?.rating
-                        ? getRankTitle(user.rating).color
-                        : 'bg-gradient-to-r from-blue-500 to-purple-500'
-                    }`}
-                  >
-                    <UserIcon className='w-4 h-4 text-white' />
-                  </div>
-                  <span className='font-medium'>{user.display_name}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align='end'
-                className='w-56 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 p-2'
-              >
-                <DropdownMenuLabel className='px-2 py-1.5'>
-                  내 계정
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <Link to='/profile'>
-                  <DropdownMenuItem className='px-2 py-2'>
-                    <UserIcon className='w-4 h-4 mr-2' />
-                    프로필
-                  </DropdownMenuItem>
-                </Link>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className='text-red-600 dark:text-red-400 px-2 py-2'
-                >
-                  <LogOut className='w-4 h-4 mr-2' />
-                  로그아웃
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {userProfile && <ProfileButton userProfile={userProfile} />}
         </header>
 
         <main className='flex-grow grid md:grid-cols-2 gap-8 animate-in fade-in-50 duration-700'>
@@ -156,24 +100,6 @@ const MainView = () => {
             </CardContent>
           </Card>
         </main>
-
-        {/* Bottom stats or info */}
-        <div className='mt-8 flex justify-center'>
-          <div className='flex items-center space-x-6 text-sm text-muted-foreground bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-full px-6 py-3 border border-white/20'>
-            <div className='flex items-center'>
-              <div className='w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse'></div>
-              실시간 매칭
-            </div>
-            <div className='flex items-center'>
-              <div className='w-2 h-2 bg-blue-500 rounded-full mr-2 animate-pulse delay-300'></div>
-              AI 피드백
-            </div>
-            <div className='flex items-center'>
-              <div className='w-2 h-2 bg-purple-500 rounded-full mr-2 animate-pulse delay-700'></div>
-              스킬 향상
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

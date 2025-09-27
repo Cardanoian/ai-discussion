@@ -18,9 +18,13 @@ import {
   Clock,
   X,
   Loader2,
+  UserCheck,
+  Eye,
+  Gavel,
 } from 'lucide-react';
 import { getRankTitle } from '@/lib/constants';
 import type { Room, Subject, Player } from '@/models/Room';
+import type { UserProfile } from '@/types/user';
 import ChangeSubjectModal from './ChangeSubjectModal';
 
 interface RoomDetailModalProps {
@@ -29,6 +33,7 @@ interface RoomDetailModalProps {
   currentRoom: Room | null;
   userId: string;
   myPosition: 'agree' | 'disagree' | null;
+  myRole: 'player' | 'spectator' | 'referee' | null;
   battleCountdown: number;
   subjects: Subject[];
   selectedSubject: string;
@@ -37,12 +42,15 @@ interface RoomDetailModalProps {
   onSubjectChange: (value: string) => void;
   onChangeSubject: () => void;
   onPositionSelect: (position: 'agree' | 'disagree') => void;
+  onRoleSelect: (role: 'player' | 'spectator' | 'referee') => void;
   onReady: () => void;
   onLeaveRoom: () => void;
   getPlayerDisplayName: (player: Player) => string;
   isSelectingPosition?: boolean;
+  isSelectingRole?: boolean;
   isGettingReady?: boolean;
   isChangingSubject?: boolean;
+  user: UserProfile;
 }
 
 const RoomDetailModal = ({
@@ -51,6 +59,7 @@ const RoomDetailModal = ({
   currentRoom,
   userId,
   myPosition,
+  myRole,
   battleCountdown,
   subjects,
   selectedSubject,
@@ -59,12 +68,15 @@ const RoomDetailModal = ({
   onSubjectChange,
   onChangeSubject,
   onPositionSelect,
+  onRoleSelect,
   onReady,
   onLeaveRoom,
   getPlayerDisplayName,
   isSelectingPosition = false,
+  isSelectingRole = false,
   isGettingReady = false,
   isChangingSubject = false,
+  user,
 }: RoomDetailModalProps) => {
   // 상대방이 선택한 포지션 확인
   const opponentPosition = currentRoom?.players
@@ -146,60 +158,130 @@ const RoomDetailModal = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className='space-y-4'>
-                {/* Position Selection */}
+                {/* Role Selection */}
                 <div className='space-y-3'>
                   <h4 className='font-semibold text-muted-foreground text-sm'>
-                    입장 선택
+                    역할 선택
                   </h4>
-                  <div className='grid grid-cols-2 gap-3'>
+                  <div className='grid grid-cols-3 gap-2'>
                     <Button
                       variant='outline'
-                      disabled={
-                        opponentPosition === 'agree' || isSelectingPosition
-                      }
-                      className={`p-4 h-auto transition-all duration-300 ${
-                        opponentPosition === 'agree' || isSelectingPosition
-                          ? 'cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
-                          : myPosition === 'agree'
-                          ? 'cursor-pointer bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg shadow-green-500/20 text-green-700 dark:text-green-300'
-                          : 'cursor-pointer bg-transparent hover:bg-green-50/50 dark:hover:bg-green-900/10 border-gray-200 dark:border-gray-700'
+                      disabled={isSelectingRole}
+                      className={`p-3 h-auto transition-all duration-300 ${
+                        myRole === 'player'
+                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 shadow-lg shadow-blue-500/20 text-blue-700 dark:text-blue-300'
+                          : 'bg-transparent hover:bg-blue-50/50 dark:hover:bg-blue-900/10 border-gray-200 dark:border-gray-700'
                       }`}
-                      onClick={() => onPositionSelect('agree')}
+                      onClick={() => onRoleSelect('player')}
                     >
-                      <div className='flex items-center justify-center space-x-2'>
-                        {isSelectingPosition ? (
-                          <Loader2 className='w-4 h-4 text-green-600 animate-spin' />
+                      <div className='flex flex-col items-center space-y-1'>
+                        {isSelectingRole ? (
+                          <Loader2 className='w-4 h-4 text-blue-600 animate-spin' />
                         ) : (
-                          <ThumbsUp className='w-4 h-4 text-green-600' />
+                          <UserCheck className='w-4 h-4 text-blue-600' />
                         )}
-                        <span className='text-sm font-medium'>찬성</span>
+                        <span className='text-xs font-medium'>플레이어</span>
                       </div>
                     </Button>
                     <Button
                       variant='outline'
-                      disabled={
-                        opponentPosition === 'disagree' || isSelectingPosition
-                      }
-                      className={`p-4 h-auto transition-all duration-300 ${
-                        opponentPosition === 'disagree' || isSelectingPosition
-                          ? 'cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
-                          : myPosition === 'disagree'
-                          ? 'cursor-pointer bg-red-50 dark:bg-red-900/20 border-red-500 shadow-lg shadow-red-500/20 text-red-700 dark:text-red-300'
-                          : 'cursor-pointer bg-transparent hover:bg-red-50/50 dark:hover:bg-red-900/10 border-gray-200 dark:border-gray-700'
+                      disabled={isSelectingRole}
+                      className={`p-3 h-auto transition-all duration-300 ${
+                        myRole === 'spectator'
+                          ? 'bg-gray-50 dark:bg-gray-900/20 border-gray-500 shadow-lg shadow-gray-500/20 text-gray-700 dark:text-gray-300'
+                          : 'bg-transparent hover:bg-gray-50/50 dark:hover:bg-gray-900/10 border-gray-200 dark:border-gray-700'
                       }`}
-                      onClick={() => onPositionSelect('disagree')}
+                      onClick={() => onRoleSelect('spectator')}
                     >
-                      <div className='flex items-center justify-center space-x-2'>
-                        {isSelectingPosition ? (
-                          <Loader2 className='w-4 h-4 text-red-600 animate-spin' />
+                      <div className='flex flex-col items-center space-y-1'>
+                        {isSelectingRole ? (
+                          <Loader2 className='w-4 h-4 text-gray-600 animate-spin' />
                         ) : (
-                          <ThumbsDown className='w-4 h-4 text-red-600' />
+                          <Eye className='w-4 h-4 text-gray-600' />
                         )}
-                        <span className='text-sm font-medium'>반대</span>
+                        <span className='text-xs font-medium'>관전자</span>
                       </div>
                     </Button>
+                    {user?.is_admin && (
+                      <Button
+                        variant='outline'
+                        disabled={isSelectingRole}
+                        className={`p-3 h-auto transition-all duration-300 ${
+                          myRole === 'referee'
+                            ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-500 shadow-lg shadow-purple-500/20 text-purple-700 dark:text-purple-300'
+                            : 'bg-transparent hover:bg-purple-50/50 dark:hover:bg-purple-900/10 border-gray-200 dark:border-gray-700'
+                        }`}
+                        onClick={() => onRoleSelect('referee')}
+                      >
+                        <div className='flex flex-col items-center space-y-1'>
+                          {isSelectingRole ? (
+                            <Loader2 className='w-4 h-4 text-purple-600 animate-spin' />
+                          ) : (
+                            <Gavel className='w-4 h-4 text-purple-600' />
+                          )}
+                          <span className='text-xs font-medium'>심판</span>
+                        </div>
+                      </Button>
+                    )}
                   </div>
                 </div>
+
+                {/* Position Selection - Only show for players */}
+                {myRole === 'player' && (
+                  <div className='space-y-3'>
+                    <h4 className='font-semibold text-muted-foreground text-sm'>
+                      입장 선택
+                    </h4>
+                    <div className='grid grid-cols-2 gap-3'>
+                      <Button
+                        variant='outline'
+                        disabled={
+                          opponentPosition === 'agree' || isSelectingPosition
+                        }
+                        className={`p-4 h-auto transition-all duration-300 ${
+                          opponentPosition === 'agree' || isSelectingPosition
+                            ? 'cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
+                            : myPosition === 'agree'
+                            ? 'cursor-pointer bg-green-50 dark:bg-green-900/20 border-green-500 shadow-lg shadow-green-500/20 text-green-700 dark:text-green-300'
+                            : 'cursor-pointer bg-transparent hover:bg-green-50/50 dark:hover:bg-green-900/10 border-gray-200 dark:border-gray-700'
+                        }`}
+                        onClick={() => onPositionSelect('agree')}
+                      >
+                        <div className='flex items-center justify-center space-x-2'>
+                          {isSelectingPosition ? (
+                            <Loader2 className='w-4 h-4 text-green-600 animate-spin' />
+                          ) : (
+                            <ThumbsUp className='w-4 h-4 text-green-600' />
+                          )}
+                          <span className='text-sm font-medium'>찬성</span>
+                        </div>
+                      </Button>
+                      <Button
+                        variant='outline'
+                        disabled={
+                          opponentPosition === 'disagree' || isSelectingPosition
+                        }
+                        className={`p-4 h-auto transition-all duration-300 ${
+                          opponentPosition === 'disagree' || isSelectingPosition
+                            ? 'cursor-not-allowed opacity-50 bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-400'
+                            : myPosition === 'disagree'
+                            ? 'cursor-pointer bg-red-50 dark:bg-red-900/20 border-red-500 shadow-lg shadow-red-500/20 text-red-700 dark:text-red-300'
+                            : 'cursor-pointer bg-transparent hover:bg-red-50/50 dark:hover:bg-red-900/10 border-gray-200 dark:border-gray-700'
+                        }`}
+                        onClick={() => onPositionSelect('disagree')}
+                      >
+                        <div className='flex items-center justify-center space-x-2'>
+                          {isSelectingPosition ? (
+                            <Loader2 className='w-4 h-4 text-red-600 animate-spin' />
+                          ) : (
+                            <ThumbsDown className='w-4 h-4 text-red-600' />
+                          )}
+                          <span className='text-sm font-medium'>반대</span>
+                        </div>
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Players Status */}
                 <div className='space-y-3'>

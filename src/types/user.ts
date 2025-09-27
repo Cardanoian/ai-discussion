@@ -6,6 +6,7 @@ export interface UserProfile {
   loses: number;
   created_at: string;
   updated_at: string;
+  is_admin: boolean;
 }
 
 export interface UserStats {

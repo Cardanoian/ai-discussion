@@ -4,6 +4,7 @@ export interface Player {
   displayname: string;
   isReady: boolean;
   position?: 'agree' | 'disagree';
+  role: 'player' | 'spectator' | 'referee';
   rating: number;
   wins: number;
   loses: number;
@@ -16,6 +17,7 @@ export interface Room {
   isFull: boolean;
   battleStarted: boolean;
   createdBy?: string;
+  hasReferee: boolean;
 }
 
 export interface Subject {

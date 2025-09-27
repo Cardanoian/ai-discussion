@@ -8,14 +8,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -27,7 +19,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  LogOut,
   User as UserIcon,
   Trophy,
   Target,
@@ -38,11 +29,11 @@ import {
   Edit,
 } from 'lucide-react';
 import { useProfileViewModel } from '@/viewmodels/ProfileViewModel';
+import ProfileButton from '@/components/ProfileButton';
 
 const ProfileView = () => {
   const {
     // State
-    user,
     userProfile,
     userStats,
     loading,
@@ -56,7 +47,6 @@ const ProfileView = () => {
 
     // Handlers
     handleNicknameUpdate,
-    handleLogout,
     getDisplayName,
   } = useProfileViewModel();
 
@@ -115,37 +105,7 @@ const ProfileView = () => {
               내 프로필
             </h1>
           </div>
-          {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant='ghost'
-                  className='flex items-center space-x-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300'
-                >
-                  <div className='w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center'>
-                    <UserIcon className='w-4 h-4 text-white' />
-                  </div>
-                  <span className='font-medium'>
-                    {user.user_metadata.full_name || user.email}
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align='end'
-                className='w-56 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20'
-              >
-                <DropdownMenuLabel>내 계정</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className='text-red-600 dark:text-red-400'
-                >
-                  <LogOut className='w-4 h-4 mr-2' />
-                  로그아웃
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {userProfile && <ProfileButton userProfile={userProfile} />}
         </header>
 
         <main className='flex-grow animate-in fade-in-50 duration-700'>

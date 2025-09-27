@@ -1,6 +1,6 @@
 export interface Message {
   text: string;
-  sender: 'pro' | 'con' | 'system' | 'judge';
+  sender: 'agree' | 'disagree' | 'system' | 'judge';
 }
 
 export interface BattleResult {

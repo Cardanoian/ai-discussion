@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import { supabase } from '@/lib/supabaseClient';
 import type { Player, Room, Subject } from '@/models/Room';
-import type { UserProfile } from '@/types/user';
+import { useUserProfile } from '@/contexts/useUserProfile';
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -13,6 +13,7 @@ const serverUrl = import.meta.env.VITE_SERVER_URL;
  */
 export const useRoomListViewModel = () => {
   const navigate = useNavigate();
+  const { userProfile } = useUserProfile();
   const [socket, setSocket] = useState<Socket | null>(null);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -26,6 +27,9 @@ export const useRoomListViewModel = () => {
   const [myPosition, setMyPosition] = useState<'agree' | 'disagree' | null>(
     null
   );
+  const [myRole, setMyRole] = useState<
+    'player' | 'spectator' | 'referee' | null
+  >(null);
   const [isChangeSubjectOpen, setIsChangeSubjectOpen] = useState(false);
   const [battleCountdown, setBattleCountdown] = useState<number>(0);
 
@@ -33,36 +37,9 @@ export const useRoomListViewModel = () => {
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [isJoiningRoom, setIsJoiningRoom] = useState(false);
   const [isSelectingPosition, setIsSelectingPosition] = useState(false);
+  const [isSelectingRole, setIsSelectingRole] = useState(false);
   const [isGettingReady, setIsGettingReady] = useState(false);
   const [isChangingSubject, setIsChangingSubject] = useState(false);
-
-  // 사용자 정보 상태 (MainView와 동일한 기능)
-  const [user, setUser] = useState<UserProfile | null>(null);
-
-  /**
-   * 사용자 프로필 정보를 가져오는 함수
-   * @param userId - 사용자 ID
-   */
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('user_profile')
-        .select('*')
-        .eq('user_uuid', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user profile:', error);
-        return;
-      }
-
-      if (profile) {
-        setUser(profile);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-    }
-  };
 
   /**
    * 로그아웃을 처리하는 함수
@@ -100,14 +77,13 @@ export const useRoomListViewModel = () => {
   );
 
   useEffect(() => {
-    // Get user authentication info and profile
+    // Get user authentication info
     const getUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        fetchUserProfile(user.id);
       }
     };
     getUser();
@@ -116,9 +92,7 @@ export const useRoomListViewModel = () => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (session?.user) {
-          fetchUserProfile(session.user.id);
-        } else {
-          setUser(null);
+          setUserId(session.user.id);
         }
       }
     );
@@ -128,12 +102,12 @@ export const useRoomListViewModel = () => {
     if (import.meta.env.DEV) {
       console.log('Socket.IO 연결 시도:', {
         serverUrl,
-        path: '/server/socket.io',
+        path: '/socket.io',
       });
     }
 
     const newSocket = io(serverUrl, {
-      path: '/server/socket.io',
+      path: import.meta.env.DEV ? '/socket.io' : '/server/socket.io',
     });
     setSocket(newSocket);
 
@@ -176,10 +150,11 @@ export const useRoomListViewModel = () => {
     newSocket.on('room_update', (updatedRoom: Room) => {
       setCurrentRoom(updatedRoom);
 
-      // Update my position based on room data
+      // Update my position and role based on room data
       const me = updatedRoom.players.find((p) => p.userId === userId);
-      if (me && me.position) {
-        setMyPosition(me.position);
+      if (me) {
+        setMyPosition(me.position || null);
+        setMyRole(me.role);
       }
     });
 
@@ -206,6 +181,19 @@ export const useRoomListViewModel = () => {
         setMyPosition(data.position);
       }
     );
+
+    // Handle role selection confirmation
+    newSocket.on(
+      'role_selected',
+      (data: { role: 'player' | 'spectator' | 'referee' }) => {
+        setMyRole(data.role);
+      }
+    );
+
+    // Handle role selection error
+    newSocket.on('role_select_error', (data: { error: string }) => {
+      alert(data.error);
+    });
 
     return () => {
       newSocket.disconnect();
@@ -326,6 +314,28 @@ export const useRoomListViewModel = () => {
   };
 
   /**
+   * 역할(플레이어/관전자/심판)을 선택하는 함수
+   * @param role - 선택할 역할
+   */
+  const handleRoleSelect = (role: 'player' | 'spectator' | 'referee') => {
+    if (!socket || !currentRoom || !userId || isSelectingRole) {
+      return;
+    }
+
+    setIsSelectingRole(true);
+    socket.emit('select_role', {
+      roomId: currentRoom.roomId,
+      userId,
+      role,
+    });
+
+    // 역할 선택은 빠르게 처리되므로 짧은 시간 후 로딩 해제
+    setTimeout(() => {
+      setIsSelectingRole(false);
+    }, 500);
+  };
+
+  /**
    * 토론 준비 완료를 알리는 함수
    */
   const handleReady = () => {
@@ -357,6 +367,7 @@ export const useRoomListViewModel = () => {
     isRoomModalOpen,
     currentRoom,
     myPosition,
+    myRole,
     isChangeSubjectOpen,
     battleCountdown,
 
@@ -364,6 +375,7 @@ export const useRoomListViewModel = () => {
     isCreatingRoom,
     isJoiningRoom,
     isSelectingPosition,
+    isSelectingRole,
     isGettingReady,
     isChangingSubject,
 
@@ -379,12 +391,13 @@ export const useRoomListViewModel = () => {
     handleLeaveRoom,
     handleChangeSubject,
     handlePositionSelect,
+    handleRoleSelect,
     handleReady,
     handleGoToMain,
     getPlayerDisplayName,
 
     // 사용자 정보 (MainView와 동일한 기능)
-    user,
+    userProfile,
     handleLogout,
   };
 };

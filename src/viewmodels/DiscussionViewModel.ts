@@ -6,6 +6,13 @@ import { generateDiscussionHelp } from '@/lib/apiClient';
 import type { Message } from '@/models/Discussion';
 import type { UserProfile } from '@/models/Profile';
 
+// 서버에서 받는 메시지 타입
+interface ServerMessage {
+  sender: 'system' | 'judge' | 'agree' | 'disagree';
+  text: string;
+  timestamp?: number;
+}
+
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
 /**
@@ -31,6 +38,31 @@ export const useDiscussionViewModel = () => {
   } | null>(null);
   const [isLoadingDocs, setIsLoadingDocs] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userRole, setUserRole] = useState<'player' | 'spectator' | 'referee'>(
+    'spectator'
+  );
+  const [userPosition, setUserPosition] = useState<'agree' | 'disagree' | null>(
+    null
+  );
+  const [isRefereeScoreModalOpen, setIsRefereeScoreModalOpen] = useState(false);
+  const [refereeScoreData, setRefereeScoreData] = useState<{
+    agreePlayerName: string;
+    disagreePlayerName: string;
+    aiResult: {
+      agree: { score: number; good: string; bad: string };
+      disagree: { score: number; good: string; bad: string };
+      winner: string;
+    };
+  } | null>(null);
+  const [battleResult, setBattleResult] = useState<{
+    agree: { score: number; good: string; bad: string };
+    disagree: { score: number; good: string; bad: string };
+    winner: string;
+    finalScore?: { agree: number; disagree: number };
+    humanScore?: { agree: number; disagree: number };
+    aiScore?: { agree: number; disagree: number };
+  } | null>(null);
+  const [isBattleResultModalOpen, setIsBattleResultModalOpen] = useState(false);
   const [timerInfo, setTimerInfo] = useState<{
     myPenaltyPoints: number;
     opponentPenaltyPoints: number;
@@ -58,120 +90,8 @@ export const useDiscussionViewModel = () => {
     totalTimeLimit: 300,
   });
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  /**
-   * 타이머를 시작하는 함수
-   */
-  const startTimer = (roundLimit: number, totalRemaining: number) => {
-    setTimerState((prev) => ({
-      ...prev,
-      roundTimeRemaining: roundLimit,
-      totalTimeRemaining: totalRemaining,
-      isRunning: true,
-      isOvertime: false,
-      roundTimeLimit: roundLimit,
-    }));
-
-    // 기존 타이머 정리
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-    }
-
-    // 새 타이머 시작
-    timerIntervalRef.current = setInterval(() => {
-      setTimerState((prev) => {
-        if (!prev.isRunning) return prev;
-
-        const newRoundTime = prev.roundTimeRemaining - 1;
-        const newTotalTime = prev.totalTimeRemaining - 1;
-
-        // 라운드 시간 초과 체크
-        if (newRoundTime <= 0 && !prev.isOvertime) {
-          // 서버에 시간 초과 신호 전송
-          if (socket && roomId && userId) {
-            socket.emit('time_overflow', {
-              roomId,
-              userId,
-              type: 'round',
-            });
-          }
-
-          return {
-            ...prev,
-            roundTimeRemaining: 0,
-            totalTimeRemaining: Math.max(0, newTotalTime),
-            isOvertime: true,
-            overtimeRemaining: 30,
-          };
-        }
-
-        // 연장시간 체크
-        if (prev.isOvertime) {
-          const newOvertimeTime = prev.overtimeRemaining - 1;
-
-          if (newOvertimeTime <= 0) {
-            // 연장시간도 초과
-            if (socket && roomId && userId) {
-              socket.emit('time_overflow', {
-                roomId,
-                userId,
-                type: 'overtime',
-              });
-            }
-
-            return {
-              ...prev,
-              overtimeRemaining: 0,
-              isRunning: false,
-            };
-          }
-
-          return {
-            ...prev,
-            totalTimeRemaining: Math.max(0, newTotalTime),
-            overtimeRemaining: newOvertimeTime,
-          };
-        }
-
-        // 전체 시간 초과 체크
-        if (newTotalTime <= 0) {
-          if (socket && roomId && userId) {
-            socket.emit('time_overflow', {
-              roomId,
-              userId,
-              type: 'total',
-            });
-          }
-
-          return {
-            ...prev,
-            roundTimeRemaining: Math.max(0, newRoundTime),
-            totalTimeRemaining: 0,
-            isRunning: false,
-          };
-        }
-
-        return {
-          ...prev,
-          roundTimeRemaining: Math.max(0, newRoundTime),
-          totalTimeRemaining: Math.max(0, newTotalTime),
-        };
-      });
-    }, 1000);
-  };
-
-  /**
-   * 타이머를 정지하는 함수
-   */
-  const stopTimer = () => {
-    setTimerState((prev) => ({ ...prev, isRunning: false }));
-
-    if (timerIntervalRef.current) {
-      clearInterval(timerIntervalRef.current);
-      timerIntervalRef.current = null;
-    }
-  };
+  // 서버 주도 타이머 시스템으로 변경 - 클라이언트 타이머 제거
+  // 이제 서버에서 timer_update 이벤트로 시간 정보를 받아서 표시만 함
 
   /**
    * 시간을 포맷하는 함수 (초 -> MM:SS)
@@ -183,26 +103,34 @@ export const useDiscussionViewModel = () => {
   };
 
   /**
+   * 개발 환경에서만 출력하는 함수
+   */
+  const printDev = (message: string) => {
+    if (!import.meta.env.DEV) return;
+    console.log(message);
+  };
+
+  /**
    * 사용자의 토론 자료를 미리 로드하는 함수
    */
   const preloadUserDocs = async (roomId: string, currentUserId: string) => {
     setIsLoadingDocs(true);
     try {
-      console.log('사용자 자료 미리 로드 시작:', { roomId, currentUserId });
+      printDev(`사용자 자료 미리 로드 시작:${{ roomId, currentUserId }}`);
 
       // roomId로부터 실제 subject_id를 가져오기 위해 rooms 테이블 조회
-      console.log('rooms 테이블 조회 시작, roomId:', roomId);
+      printDev(`rooms 테이블 조회 시작, roomId: ${roomId}`);
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .select('subject_id')
         .eq('uuid', roomId)
         .single();
 
-      console.log('rooms 테이블 조회 결과:', { roomData, roomError });
+      printDev(`rooms 테이블 조회 결과:, ${{ roomData, roomError }}`);
 
       if (roomError || !roomData?.subject_id) {
         console.error('방 정보 조회 오류:', roomError);
-        console.log('빈 자료로 설정하고 종료');
+        printDev('빈 자료로 설정하고 종료');
         // 방 정보를 가져올 수 없는 경우 빈 자료로 설정
         setUserDocs({
           agree: { reasons: [], questions: [] },
@@ -212,16 +140,16 @@ export const useDiscussionViewModel = () => {
       }
 
       const actualSubjectId = roomData.subject_id;
-      console.log('실제 subject_id:', actualSubjectId);
+      printDev(`실제 subject_id: ${actualSubjectId}`);
 
       // 실제 subject_id로 사용자 자료 조회
-      console.log('사용자 자료 조회 시작:', { actualSubjectId, currentUserId });
+      printDev(`사용자 자료 조회 시작:, ${{ actualSubjectId, currentUserId }}`);
       const [agreeData, disagreeData] = await Promise.all([
         getUserDocs(actualSubjectId, false), // 찬성 자료
         getUserDocs(actualSubjectId, true), // 반대 자료
       ]);
 
-      console.log('사용자 자료 조회 완료:', { agreeData, disagreeData });
+      printDev(`사용자 자료 조회 완료: ${{ agreeData, disagreeData }}`);
 
       const processedDocs = {
         agree: agreeData || { reasons: [], questions: [] },
@@ -229,7 +157,7 @@ export const useDiscussionViewModel = () => {
       };
 
       setUserDocs(processedDocs);
-      console.log('사용자 자료 미리 로드 완료:', processedDocs);
+      printDev(`사용자 자료 미리 로드 완료: ${processedDocs}`);
     } catch (error) {
       console.error('자료 미리 로드 오류:', error);
       setUserDocs({
@@ -277,7 +205,7 @@ export const useDiscussionViewModel = () => {
 
       // 사용자 프로필 정보 로드 (한 번만)
       try {
-        console.log('사용자 프로필 조회 시작:', currentUserId);
+        printDev(`사용자 프로필 조회 시작: ${currentUserId}`);
         const { data: profile, error } = await supabase
           .from('user_profile')
           .select('*')
@@ -293,17 +221,19 @@ export const useDiscussionViewModel = () => {
             rating: 1600,
             wins: 0,
             loses: 0,
-            avatar_url: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            is_admin: false,
           };
           setUserProfile(defaultProfile);
-          console.log('기본 프로필 설정:', defaultProfile);
+          printDev(`기본 프로필 설정: ${defaultProfile}`);
         } else if (profile) {
           setUserProfile(profile);
-          console.log('사용자 프로필 로드 완료:', profile);
+          // 사용자 역할 설정 (관리자면 심판, 아니면 일단 관전자로 시작)
+          setUserRole(profile.is_admin ? 'referee' : 'spectator');
+          printDev(`사용자 프로필 로드 완료: ${profile}`);
         } else {
-          console.log('프로필 데이터가 없음');
+          printDev('프로필 데이터가 없음');
           // 프로필이 없는 경우에도 기본값 설정
           const defaultProfile = {
             user_uuid: currentUserId,
@@ -311,12 +241,12 @@ export const useDiscussionViewModel = () => {
             rating: 1600,
             wins: 0,
             loses: 0,
-            avatar_url: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            is_admin: false,
           };
           setUserProfile(defaultProfile);
-          console.log('기본 프로필 설정 (데이터 없음):', defaultProfile);
+          printDev(`기본 프로필 설정 (데이터 없음): ${defaultProfile}`);
         }
       } catch (error) {
         console.error('사용자 프로필 로드 오류:', error);
@@ -327,85 +257,112 @@ export const useDiscussionViewModel = () => {
           rating: 1600,
           wins: 0,
           loses: 0,
-          avatar_url: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          is_admin: false,
         };
         setUserProfile(defaultProfile);
-        console.log('기본 프로필 설정 (catch):', defaultProfile);
+        printDev(`기본 프로필 설정 (catch): ${defaultProfile}`);
       }
 
       const newSocket = io(serverUrl, {
-        path: '/server/socket.io',
+        path: import.meta.env.DEV ? '/socket.io' : '/server/socket.io',
       });
       setSocket(newSocket);
 
       newSocket.on('connect', () => {
-        console.log('Connected to discussion socket server:', newSocket.id);
+        printDev(`Connected to discussion socket server: ${newSocket.id}`);
 
         // 연결 후 즉시 룸에 join하고 discussionView 준비 완료 신호 보내기
-        console.log('룸에 join:', stateRoomId);
+        printDev(`룸에 join: ${stateRoomId}`);
         newSocket.emit('join_discussion_room', {
           roomId: stateRoomId,
           userId: currentUserId,
         });
 
-        console.log('discussionView 준비 완료, 서버에 신호 전송');
+        printDev('discussionView 준비 완료, 서버에 신호 전송');
         newSocket.emit('discussion_view_ready', {
           roomId: stateRoomId,
           userId: currentUserId,
         });
+
+        // 서버에서 메시지 목록 요청
+        printDev('서버에서 메시지 목록 요청');
+        newSocket.emit('get_messages', { roomId: stateRoomId });
       });
 
       newSocket.on('disconnect', () => {
-        console.log('소켓 연결 해제됨');
+        printDev('소켓 연결 해제됨');
       });
 
       newSocket.on('connect_error', (error) => {
         console.error('소켓 연결 오류:', error);
       });
 
-      // Listen for battle info messages
-      newSocket.on('battle_info', (message: string) => {
-        console.log('받은 battle_info:', message);
-        setMessages((prev) => {
-          // 중복 시스템 메시지 방지
-          const isDuplicate = prev.some(
-            (msg) => msg.sender === 'system' && msg.text === message
-          );
+      // 서버에서 관리하는 메시지 목록 업데이트 리스너
+      newSocket.on('messages_updated', (serverMessages: ServerMessage[]) => {
+        printDev(`받은 messages_updated: ${serverMessages.length}개 메시지`);
 
-          if (isDuplicate) {
-            console.log('중복 시스템 메시지 감지, 무시:', message);
-            return prev;
-          }
+        // 서버 메시지를 클라이언트 메시지 형식으로 변환
+        const clientMessages: Message[] = serverMessages.map((msg) => ({
+          sender: msg.sender,
+          text: msg.text,
+        }));
 
-          return [...prev, { sender: 'system', text: message }];
-        });
+        setMessages(clientMessages);
       });
 
-      // Listen for AI judge messages
+      // AI judge messages - stage 정보 업데이트용
       newSocket.on(
         'ai_judge_message',
         (data: { message: string; stage: number }) => {
-          console.log('받은 ai_judge_message:', data);
-          setMessages((prev) => {
-            // 중복 AI 심판 메시지 방지
-            const isDuplicate = prev.some(
-              (msg) => msg.sender === 'judge' && msg.text === data.message
-            );
-
-            if (isDuplicate) {
-              console.log('중복 AI 심판 메시지 감지, 무시:', data);
-              return prev;
-            }
-
-            return [...prev, { sender: 'judge', text: data.message }];
-          });
+          printDev(`받은 ai_judge_message: ${data}`);
           setCurrentStage(data.stage);
 
           // 토론 시작 시 사용자 자료 미리 로드
           if (data.stage === 1) {
             preloadUserDocs(stateRoomId, currentUserId);
+          }
+        }
+      );
+
+      // Listen for player list updates to determine user role
+      newSocket.on(
+        'player_list_updated',
+        (data: {
+          players: Array<{ userId: string; role: string; position?: string }>;
+        }) => {
+          printDev(`받은 player_list_updated: ${JSON.stringify(data)}`);
+
+          // 현재 사용자가 플레이어 목록에 있는지 확인
+          const currentUserPlayer = data.players.find(
+            (p) => p.userId === currentUserId
+          );
+
+          if (currentUserPlayer) {
+            printDev(`현재 사용자 정보: ${JSON.stringify(currentUserPlayer)}`);
+
+            // 사용자 역할 설정 - 관리자가 아닌 경우에만 역할 변경
+            if (!userProfile?.is_admin) {
+              const newRole = currentUserPlayer.role as
+                | 'player'
+                | 'spectator'
+                | 'referee';
+              if (newRole !== userRole) {
+                setUserRole(newRole);
+                printDev(`역할 변경: ${userRole} -> ${newRole}`);
+              }
+            }
+
+            // 사용자 입장 설정 (agree/disagree)
+            if (currentUserPlayer.position) {
+              const position =
+                currentUserPlayer.position === 'agree' ? 'agree' : 'disagree';
+              if (position !== userPosition) {
+                setUserPosition(position);
+                printDev(`사용자 입장 설정: ${position}`);
+              }
+            }
           }
         }
       );
@@ -419,67 +376,35 @@ export const useDiscussionViewModel = () => {
           message: string;
           stageDescription: string;
         }) => {
-          console.log('받은 turn_info:', data, '현재 userId:', currentUserId);
+          printDev(`받은 turn_info: ${data}, 현재 userId: ${currentUserId}`);
           setCurrentTurn(data.currentPlayerId);
           const isMyNewTurn = data.currentPlayerId === currentUserId;
           setIsMyTurn(isMyNewTurn);
           setCurrentStage(data.stage);
           setStageDescription(data.stageDescription);
 
-          // 내 턴이 시작되면 타이머 시작
-          if (isMyNewTurn) {
-            startTimer(120, 300); // 2분 라운드, 5분 전체
-          } else {
-            stopTimer(); // 상대방 턴이면 타이머 정지
-          }
-
-          setMessages((prev) => {
-            // 중복 턴 정보 메시지 방지
-            const isDuplicate = prev.some(
-              (msg) => msg.sender === 'system' && msg.text === data.message
-            );
-
-            if (isDuplicate) {
-              console.log('중복 턴 정보 메시지 감지, 무시:', data);
-              return prev;
-            }
-
-            return [...prev, { sender: 'system', text: data.message }];
-          });
+          // 서버 주도 타이머 시스템에서는 클라이언트가 타이머를 직접 제어하지 않음
+          // 서버에서 timer_update 이벤트로 시간 정보를 받아서 표시
         }
       );
 
-      // Listen for new messages from players
+      // Listen for battle results
       newSocket.on(
-        'new_message',
-        (data: { userId: string; message: string; sender: string }) => {
-          setMessages((prev) => {
-            // 중복 메시지 방지: 같은 내용의 메시지가 이미 있는지 확인
-            const isDuplicate = prev.some(
-              (msg) =>
-                msg.sender === data.sender &&
-                msg.text === data.message &&
-                prev.indexOf(msg) === prev.length - 1 // 마지막 메시지와 비교
-            );
-
-            if (isDuplicate) {
-              console.log('중복 메시지 감지, 무시:', data);
-              return prev;
-            }
-
-            return [
-              ...prev,
-              { sender: data.sender as 'pro' | 'con', text: data.message },
-            ];
-          });
+        'battle_result',
+        (result: {
+          agree: { score: number; good: string; bad: string };
+          disagree: { score: number; good: string; bad: string };
+          winner: string;
+          finalScore?: { agree: number; disagree: number };
+          humanScore?: { agree: number; disagree: number };
+          aiScore?: { agree: number; disagree: number };
+        }) => {
+          printDev(`받은 battle_result: ${JSON.stringify(result)}`);
+          setBattleEnded(true);
+          setBattleResult(result);
+          setIsBattleResultModalOpen(true);
         }
       );
-
-      // Listen for battle results (내부 처리용, UI에는 표시하지 않음)
-      newSocket.on('battle_result', () => {
-        setBattleEnded(true);
-        // JSON 형식은 클라이언트에 표시하지 않고, ai_judge_message로만 표시
-      });
 
       // Listen for penalty applied events
       newSocket.on(
@@ -490,7 +415,7 @@ export const useDiscussionViewModel = () => {
           maxPenaltyPoints: number;
           message: string;
         }) => {
-          console.log('받은 penalty_applied:', data);
+          printDev(`받은 penalty_applied: ${data}`);
 
           // 감점 정보 업데이트
           setTimerInfo((prev) => ({
@@ -505,12 +430,6 @@ export const useDiscussionViewModel = () => {
                 : prev.opponentPenaltyPoints,
             maxPenaltyPoints: data.maxPenaltyPoints,
           }));
-
-          // 감점 메시지 표시
-          setMessages((prev) => [
-            ...prev,
-            { sender: 'system', text: data.message },
-          ]);
         }
       );
 
@@ -518,24 +437,59 @@ export const useDiscussionViewModel = () => {
       newSocket.on(
         'overtime_granted',
         (data: { userId: string; overtimeLimit: number; message: string }) => {
-          console.log('받은 overtime_granted:', data);
-
-          // 연장시간 메시지 표시
-          setMessages((prev) => [
-            ...prev,
-            { sender: 'system', text: data.message },
-          ]);
+          printDev(`받은 overtime_granted: ${data}`);
         }
       );
 
       // Listen for battle errors
       newSocket.on('battle_error', (error: string) => {
-        console.log('받은 battle_error:', error);
-        setMessages((prev) => [
-          ...prev,
-          { sender: 'system', text: `오류: ${error}` },
-        ]);
+        printDev(`받은 battle_error: ${error}`);
       });
+
+      // Listen for referee score modal request
+      newSocket.on(
+        'show_referee_score_modal',
+        (data: {
+          agreePlayerName: string;
+          disagreePlayerName: string;
+          aiResult: {
+            agree: { score: number; good: string; bad: string };
+            disagree: { score: number; good: string; bad: string };
+            winner: string;
+          };
+        }) => {
+          printDev(`받은 show_referee_score_modal: ${data}`);
+          setRefereeScoreData(data);
+          setIsRefereeScoreModalOpen(true);
+        }
+      );
+
+      // Listen for server timer updates
+      newSocket.on(
+        'timer_update',
+        (data: {
+          currentPlayerId: string;
+          roundTimeRemaining: number;
+          totalTimeRemaining: number;
+          isOvertime: boolean;
+          overtimeRemaining: number;
+          roundTimeLimit: number;
+          totalTimeLimit: number;
+        }) => {
+          printDev(`받은 timer_update: ${data}`);
+
+          // 서버에서 받은 시간 정보로 타이머 상태 업데이트
+          setTimerState({
+            roundTimeRemaining: data.roundTimeRemaining,
+            totalTimeRemaining: data.totalTimeRemaining,
+            isRunning: data.currentPlayerId === currentUserId,
+            isOvertime: data.isOvertime,
+            overtimeRemaining: data.overtimeRemaining,
+            roundTimeLimit: data.roundTimeLimit,
+            totalTimeLimit: data.totalTimeLimit,
+          });
+        }
+      );
     };
 
     initializeDiscussion();
@@ -544,10 +498,7 @@ export const useDiscussionViewModel = () => {
       if (socket) {
         socket.disconnect();
       }
-      // 타이머 정리
-      if (timerIntervalRef.current) {
-        clearInterval(timerIntervalRef.current);
-      }
+      // 서버 주도 타이머 시스템으로 변경 - 클라이언트 타이머 정리 불필요
     };
   }, [navigate]); // location.state 의존성 제거
 
@@ -600,31 +551,37 @@ export const useDiscussionViewModel = () => {
    * @param message - 전송할 메시지 내용
    */
   const sendMessage = (message: string) => {
-    console.log('sendMessage 호출됨:', {
-      socket: !!socket,
-      message: message.trim(),
-      isMyTurn,
-      battleEnded,
-      roomId,
-      userId,
-    });
-
-    if (socket && message.trim() && isMyTurn && !battleEnded && roomId) {
-      console.log('send_message 이벤트 발송:', {
-        roomId,
-        userId,
+    printDev(
+      `sendMessage 호출됨: ${{
+        socket: !!socket,
         message: message.trim(),
-      });
-      socket.emit('send_message', { roomId, userId, message: message.trim() });
-    } else {
-      console.log('sendMessage 조건 실패:', {
-        hasSocket: !!socket,
-        hasMessage: !!message.trim(),
         isMyTurn,
         battleEnded,
-        hasRoomId: !!roomId,
-        hasUserId: !!userId,
-      });
+        roomId,
+        userId,
+      }}`
+    );
+
+    if (socket && message.trim() && isMyTurn && !battleEnded && roomId) {
+      printDev(
+        `send_message 이벤트 발송: ${{
+          roomId,
+          userId,
+          message: message.trim(),
+        }}`
+      );
+      socket.emit('send_message', { roomId, userId, message: message.trim() });
+    } else {
+      printDev(
+        `sendMessage 조건 실패: ${{
+          hasSocket: !!socket,
+          hasMessage: !!message.trim(),
+          isMyTurn,
+          battleEnded,
+          hasRoomId: !!roomId,
+          hasUserId: !!userId,
+        }}`
+      );
     }
   };
 
@@ -661,16 +618,16 @@ export const useDiscussionViewModel = () => {
       };
       if (userDocs) {
         docs = userPosition === 'agree' ? userDocs.agree : userDocs.disagree;
-        console.log('캐시된 자료 사용:', { userPosition, docs });
+        printDev(`캐시된 자료 사용: ${{ userPosition, docs }}`);
       } else {
         // 캐시가 없는 경우 빈 배열 사용 (DB 재조회 방지)
-        console.log('캐시가 없어 빈 자료로 AI 호출:', { userPosition });
+        printDev(`캐시가 없어 빈 자료로 AI 호출: ${{ userPosition }}`);
         docs = { reasons: [], questions: [] };
       }
 
       // 캐시된 사용자 등급 정보 사용 (기본값: 1600 - 실버 등급)
       const userRating = userProfile?.rating || 1600;
-      console.log('사용자 등급 정보:', { userRating, userProfile });
+      printDev(`사용자 등급 정보: ${{ userRating, userProfile }}`);
 
       // AI에게 도움 요청 (사용자 등급 정보 포함)
       const suggestion = await generateDiscussionHelp(
@@ -782,6 +739,22 @@ export const useDiscussionViewModel = () => {
     }
   };
 
+  /**
+   * 심판 점수 제출 함수
+   */
+  const handleRefereeScoreSubmit = (scores: {
+    agree: number;
+    disagree: number;
+  }) => {
+    if (socket && roomId && userId) {
+      socket.emit('referee_submit_scores', {
+        roomId,
+        scores,
+        refereeId: userId,
+      });
+    }
+  };
+
   return {
     messages,
     scrollAreaRef,
@@ -798,5 +771,19 @@ export const useDiscussionViewModel = () => {
     timerInfo,
     timerState,
     formatTime,
+    userRole,
+    setUserRole,
+    userPosition,
+    socket,
+    roomId,
+    userId,
+    isRefereeScoreModalOpen,
+    setIsRefereeScoreModalOpen,
+    refereeScoreData,
+    handleRefereeScoreSubmit,
+    battleResult,
+    isBattleResultModalOpen,
+    setIsBattleResultModalOpen,
+    userProfile,
   };
 };

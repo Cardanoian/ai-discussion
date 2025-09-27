@@ -107,7 +107,7 @@ export const generateDiscussionHelp = async (
   currentStage: number,
   stageDescription: string,
   discussionLog: Array<{
-    sender: 'pro' | 'con' | 'system' | 'judge';
+    sender: 'agree' | 'disagree' | 'system' | 'judge';
     text: string;
   }>,
   userReasons: string[],

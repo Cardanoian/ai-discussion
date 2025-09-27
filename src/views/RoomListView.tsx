@@ -1,28 +1,12 @@
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  LogIn,
-  Users,
-  Hourglass,
-  Home,
-  Loader2,
-  LogOut,
-  User as UserIcon,
-} from 'lucide-react';
+import { LogIn, Users, Hourglass, Home, Loader2 } from 'lucide-react';
 import { useRoomListViewModel } from '@/viewmodels/RoomListViewModel';
 import CreateRoomModal from '@/components/modals/CreateRoomModal';
 import RoomDetailModal from '@/components/modals/RoomDetailModal';
 import { getRankTitle } from '@/lib/constants';
+import ProfileButton from '@/components/ProfileButton';
 
 const RoomListView = () => {
   // 승률 계산 함수
@@ -48,6 +32,7 @@ const RoomListView = () => {
     isRoomModalOpen,
     currentRoom,
     myPosition,
+    myRole,
     isChangeSubjectOpen,
     battleCountdown,
 
@@ -55,6 +40,7 @@ const RoomListView = () => {
     isCreatingRoom,
     isJoiningRoom,
     isSelectingPosition,
+    isSelectingRole,
     isGettingReady,
     isChangingSubject,
 
@@ -70,13 +56,13 @@ const RoomListView = () => {
     handleLeaveRoom,
     handleChangeSubject,
     handlePositionSelect,
+    handleRoleSelect,
     handleReady,
     handleGoToMain,
     getPlayerDisplayName,
 
     // 사용자 정보 (MainView와 동일한 기능을 위해 추가 필요)
-    user,
-    handleLogout,
+    userProfile,
   } = useRoomListViewModel();
 
   return (
@@ -93,49 +79,7 @@ const RoomListView = () => {
           <h1 className='text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-500'>
             토론 배틀 대전 목록
           </h1>
-          {user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant='ghost'
-                  className='flex items-center space-x-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-0 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300 px-4 py-2'
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      user?.rating
-                        ? getRankTitle(user.rating).color
-                        : 'bg-gradient-to-r from-purple-500 to-pink-500'
-                    }`}
-                  >
-                    <UserIcon className='w-4 h-4 text-white' />
-                  </div>
-                  <span className='font-medium'>{user.display_name}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align='end'
-                className='w-56 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 p-2'
-              >
-                <DropdownMenuLabel className='px-2 py-1.5'>
-                  내 계정
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <Link to='/profile'>
-                  <DropdownMenuItem className='px-2 py-2'>
-                    <UserIcon className='w-4 h-4 mr-2' />
-                    프로필
-                  </DropdownMenuItem>
-                </Link>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className='text-red-600 dark:text-red-400 px-2 py-2'
-                >
-                  <LogOut className='w-4 h-4 mr-2' />
-                  로그아웃
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+          {userProfile && <ProfileButton userProfile={userProfile} />}
         </div>
 
         {/* Main content */}
@@ -162,7 +106,23 @@ const RoomListView = () => {
                             <div className='space-y-3'>
                               <div className='text-sm text-muted-foreground flex items-center'>
                                 <Users className='w-4 h-4 mr-2 text-purple-500' />
-                                <span>{room.players.length}/2 Players</span>
+                                <span>
+                                  {
+                                    room.players.filter(
+                                      (p) => p.role === 'player'
+                                    ).length
+                                  }
+                                  명 플레이어
+                                  {room.players.filter(
+                                    (p) => p.role === 'spectator'
+                                  ).length > 0 &&
+                                    `, ${
+                                      room.players.filter(
+                                        (p) => p.role === 'spectator'
+                                      ).length
+                                    }명 관전자`}
+                                  {room.hasReferee && ', 심판 있음'}
+                                </span>
                               </div>
 
                               {/* 플레이어 정보 표시 */}
@@ -232,7 +192,7 @@ const RoomListView = () => {
                           </div>
                           <Button
                             onClick={() => handleJoinRoom(room.roomId)}
-                            disabled={room.isFull || isJoiningRoom}
+                            disabled={room.battleStarted || isJoiningRoom}
                             className='bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 group'
                           >
                             {isJoiningRoom ? (
@@ -240,7 +200,11 @@ const RoomListView = () => {
                             ) : (
                               <LogIn className='w-4 h-4 mr-2 group-hover:translate-x-1 transition-transform duration-300' />
                             )}
-                            {isJoiningRoom ? '참가 중...' : '참여하기'}
+                            {isJoiningRoom
+                              ? '참가 중...'
+                              : room.battleStarted
+                              ? '진행 중'
+                              : '참여하기'}
                           </Button>
                         </div>
                       </Card>
@@ -265,10 +229,9 @@ const RoomListView = () => {
               <div className='flex justify-center items-center gap-4'>
                 <Button
                   onClick={handleGoToMain}
-                  variant='outline'
-                  className='bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-white/20 hover:bg-white/90 dark:hover:bg-slate-800/90'
+                  className='bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 group px-8 py-3'
                 >
-                  <Home className='w-4 h-4 mr-2' />
+                  <Home className='w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300' />
                   메인으로
                 </Button>
                 <CreateRoomModal
@@ -286,27 +249,33 @@ const RoomListView = () => {
         </div>
 
         {/* Room Modal */}
-        <RoomDetailModal
-          isOpen={isRoomModalOpen}
-          onOpenChange={setIsRoomModalOpen}
-          currentRoom={currentRoom}
-          userId={userId}
-          myPosition={myPosition}
-          battleCountdown={battleCountdown}
-          subjects={subjects}
-          selectedSubject={selectedSubject}
-          isChangeSubjectOpen={isChangeSubjectOpen}
-          onChangeSubjectOpenChange={setIsChangeSubjectOpen}
-          onSubjectChange={setSelectedSubject}
-          onChangeSubject={handleChangeSubject}
-          onPositionSelect={handlePositionSelect}
-          onReady={handleReady}
-          onLeaveRoom={handleLeaveRoom}
-          getPlayerDisplayName={getPlayerDisplayName}
-          isSelectingPosition={isSelectingPosition}
-          isGettingReady={isGettingReady}
-          isChangingSubject={isChangingSubject}
-        />
+        {userProfile && (
+          <RoomDetailModal
+            isOpen={isRoomModalOpen}
+            onOpenChange={setIsRoomModalOpen}
+            currentRoom={currentRoom}
+            userId={userId}
+            myPosition={myPosition}
+            myRole={myRole}
+            battleCountdown={battleCountdown}
+            subjects={subjects}
+            selectedSubject={selectedSubject}
+            isChangeSubjectOpen={isChangeSubjectOpen}
+            onChangeSubjectOpenChange={setIsChangeSubjectOpen}
+            onSubjectChange={setSelectedSubject}
+            onChangeSubject={handleChangeSubject}
+            onPositionSelect={handlePositionSelect}
+            onRoleSelect={handleRoleSelect}
+            onReady={handleReady}
+            onLeaveRoom={handleLeaveRoom}
+            getPlayerDisplayName={getPlayerDisplayName}
+            isSelectingPosition={isSelectingPosition}
+            isSelectingRole={isSelectingRole}
+            isGettingReady={isGettingReady}
+            isChangingSubject={isChangingSubject}
+            user={userProfile}
+          />
+        )}
       </div>
     </div>
   );

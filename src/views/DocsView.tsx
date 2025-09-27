@@ -238,12 +238,18 @@ const DocsView = () => {
             </Card>
 
             <div className='flex justify-end space-x-4 mt-8'>
-              <Button variant='ghost' onClick={handleCancel}>
-                <ArrowLeft className='w-4 h-4 mr-2' />
+              <Button
+                onClick={handleCancel}
+                className='bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white border-0 shadow-lg shadow-gray-500/25 hover:shadow-xl hover:shadow-gray-500/30 transition-all duration-300 group'
+              >
+                <ArrowLeft className='w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300' />
                 뒤로
               </Button>
-              <Button onClick={handleSave}>
-                <Save className='w-4 h-4 mr-2' />
+              <Button
+                onClick={handleSave}
+                className='bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 group'
+              >
+                <Save className='w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-300' />
                 저장
               </Button>
             </div>
