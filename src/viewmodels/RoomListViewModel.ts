@@ -74,6 +74,29 @@ export const useRoomListViewModel = () => {
     };
     getUser();
 
+    // Get subjects from Supabase directly
+    const fetchSubjects = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('subjects')
+          .select('uuid, title, text')
+          .order('title');
+
+        if (error) {
+          console.error('Error fetching subjects:', error);
+          return;
+        }
+
+        if (data) {
+          setSubjects(data);
+        }
+      } catch (error) {
+        console.error('Error fetching subjects:', error);
+      }
+    };
+
+    fetchSubjects();
+
     const newSocket = io(serverUrl);
     setSocket(newSocket);
 
@@ -81,18 +104,6 @@ export const useRoomListViewModel = () => {
       newSocket.emit('get_rooms', (data: { rooms: Room[] }) => {
         setRooms(data.rooms);
       });
-
-      // Get subjects for room creation
-      newSocket.emit(
-        'get_subjects',
-        (data: { subjects?: Subject[]; error?: string }) => {
-          if (data.subjects) {
-            setSubjects(data.subjects);
-          } else if (data.error) {
-            console.error('Error fetching subjects:', data.error);
-          }
-        }
-      );
     });
 
     newSocket.on('rooms_update', (updatedRooms: Room[]) => {
