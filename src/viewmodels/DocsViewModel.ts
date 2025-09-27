@@ -38,7 +38,7 @@ export const useDocsViewModel = () => {
       const { data, error } = await supabase
         .from('subjects')
         .select('*')
-        .order('title');
+        .order('created_at');
       if (error) {
         console.error('Error fetching subjects:', error);
       } else {

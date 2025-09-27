@@ -335,7 +335,9 @@ export const useDiscussionViewModel = () => {
         console.log('기본 프로필 설정 (catch):', defaultProfile);
       }
 
-      const newSocket = io(serverUrl);
+      const newSocket = io(serverUrl, {
+        path: '/server/socket.io',
+      });
       setSocket(newSocket);
 
       newSocket.on('connect', () => {

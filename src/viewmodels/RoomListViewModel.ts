@@ -74,36 +74,50 @@ export const useRoomListViewModel = () => {
     };
     getUser();
 
-    // Get subjects from Supabase directly
-    const fetchSubjects = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('subjects')
-          .select('*')
-          .order('title');
+    // Subjects will be fetched via Socket.IO after connection
 
-        if (error) {
-          console.error('Error fetching subjects:', error);
-          return;
-        }
+    if (import.meta.env.DEV) {
+      console.log('Socket.IO 연결 시도:', {
+        serverUrl,
+        path: '/server/socket.io',
+      });
+    }
 
-        if (data) {
-          setSubjects(data);
-        }
-      } catch (error) {
-        console.error('Error fetching subjects:', error);
-      }
-    };
-
-    fetchSubjects();
-
-    const newSocket = io(serverUrl);
+    const newSocket = io(serverUrl, {
+      path: '/server/socket.io',
+    });
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
+      if (import.meta.env.DEV) {
+        console.log('Socket.IO 연결 성공:', newSocket.id);
+      }
+
+      // Get rooms
       newSocket.emit('get_rooms', (data: { rooms: Room[] }) => {
+        if (import.meta.env.DEV) {
+          console.log('방 목록 수신:', data.rooms);
+        }
         setRooms(data.rooms);
       });
+
+      // Get subjects via Socket.IO
+      newSocket.emit('get_subjects', (data: { subjects: Subject[] }) => {
+        if (import.meta.env.DEV) {
+          console.log('주제 목록 수신:', data.subjects);
+        }
+        setSubjects(data.subjects);
+      });
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Socket.IO 연결 오류:', error);
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      if (import.meta.env.DEV) {
+        console.log('Socket.IO 연결 해제:', reason);
+      }
     });
 
     newSocket.on('rooms_update', (updatedRooms: Room[]) => {
