@@ -35,7 +35,10 @@ export const useDocsViewModel = () => {
   // 주제 목록 가져오기
   useEffect(() => {
     const fetchSubjects = async () => {
-      const { data, error } = await supabase.from('subjects').select('*');
+      const { data, error } = await supabase
+        .from('subjects')
+        .select('*')
+        .order('title');
       if (error) {
         console.error('Error fetching subjects:', error);
       } else {

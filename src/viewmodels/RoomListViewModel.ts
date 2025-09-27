@@ -79,7 +79,7 @@ export const useRoomListViewModel = () => {
       try {
         const { data, error } = await supabase
           .from('subjects')
-          .select('uuid, title, text')
+          .select('*')
           .order('title');
 
         if (error) {
