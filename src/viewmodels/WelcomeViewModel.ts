@@ -8,7 +8,7 @@ export const useWelcomeViewModel = () => {
   /**
    * Google OAuth를 통한 로그인을 처리하는 함수
    */
-  const handleLogin = async () => {
+  const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -16,11 +16,27 @@ export const useWelcomeViewModel = () => {
       },
     });
     if (error) {
-      console.error('Error logging in:', error);
+      console.error('Error logging in with Google:', error);
+    }
+  };
+
+  /**
+   * Kakao OAuth를 통한 로그인을 처리하는 함수
+   */
+  const handleKakaoLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: {
+        redirectTo: `${window.location.origin}`,
+      },
+    });
+    if (error) {
+      console.error('Error logging in with Kakao:', error);
     }
   };
 
   return {
-    handleLogin,
+    handleGoogleLogin,
+    handleKakaoLogin,
   };
 };

@@ -4,7 +4,7 @@ import { BrainCircuit, Sparkles } from 'lucide-react';
 import { useWelcomeViewModel } from '@/viewmodels/WelcomeViewModel';
 
 const WelcomeView = () => {
-  const { handleLogin } = useWelcomeViewModel();
+  const { handleGoogleLogin, handleKakaoLogin } = useWelcomeViewModel();
 
   return (
     <div className='flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900'>
@@ -52,7 +52,7 @@ const WelcomeView = () => {
           </p>
 
           <Button
-            onClick={handleLogin}
+            onClick={handleGoogleLogin}
             size='lg'
             className='w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 transform hover:scale-[1.02]'
           >
@@ -75,6 +75,20 @@ const WelcomeView = () => {
               />
             </svg>
             Google로 시작하기
+          </Button>
+
+          <Button
+            onClick={handleKakaoLogin}
+            size='lg'
+            className='w-full mt-3 bg-[#FEE500] hover:bg-[#FDD835] text-black border-0 shadow-lg shadow-yellow-500/25 hover:shadow-xl hover:shadow-yellow-500/30 transition-all duration-300 transform hover:scale-[1.02]'
+          >
+            <svg className='w-5 h-5 mr-2' viewBox='0 0 24 24'>
+              <path
+                fill='currentColor'
+                d='M12 3c5.799 0 10.5 3.664 10.5 8.185 0 4.52-4.701 8.184-10.5 8.184a13.5 13.5 0 0 1-1.727-.11l-4.408 2.883c-.501.265-.678.236-.472-.413l.892-3.678c-2.88-1.46-4.785-3.99-4.785-6.866C1.5 6.665 6.201 3 12 3Z'
+              />
+            </svg>
+            카카오로 시작하기
           </Button>
 
           <div className='mt-6 flex items-center space-x-4 text-xs text-muted-foreground'>
