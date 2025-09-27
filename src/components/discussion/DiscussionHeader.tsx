@@ -38,7 +38,7 @@ const DiscussionHeader = ({
                 className={cn(
                   'flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold',
                   timerState.isOvertime
-                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 animate-pulse'
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
                     : timerState.roundTimeRemaining <= 30
                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400 animate-pulse'
                     : 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
@@ -56,9 +56,9 @@ const DiscussionHeader = ({
               <div
                 className={cn(
                   'flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold',
-                  timerState.totalTimeRemaining <= 60
+                  timerState.totalTimeRemaining <= 30
                     ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 animate-pulse'
-                    : timerState.totalTimeRemaining <= 120
+                    : timerState.totalTimeRemaining <= 60
                     ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                     : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                 )}
