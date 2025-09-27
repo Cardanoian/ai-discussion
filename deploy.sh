@@ -63,29 +63,37 @@ fi
 
 # Nginx 설정 파일 생성
 echo "🔧 Nginx 설정 파일 생성 중..."
-cat > http.conf << 'EOF'
-server{
-    listen 80;
-    return 308 https://$host:443$request_uri; #들어오는 모든 80번 포트 요청에 대해 443으로 업그레이드
-}
-EOF
-sudo ln -s /etc/nginx/sites-available/http.conf /etc/nginx/sites-enabled/http.conf
-
 cat > debate.gbeai.net.conf << 'EOF'
-# HTTPS 설정 (SSL 인증서가 있는 경우)
+# HTTPS 서버 블록
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
     server_name debate.gbeai.net;
     root /var/www/debate.gbeai.net;
     index index.html;
-
-    # SSL 인증서 경로 (실제 경로로 수정 필요)
-    # ssl_certificate /etc/letsencrypt/live/debate.gbeai.net/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/debate.gbeai.net/privkey.pem;
+    
+    # SSL 인증서 경로 (Certbot이 관리)
+    ssl_certificate /etc/letsencrypt/live/debate.gbeai.net/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/debate.gbeai.net/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
 
     # SPA 라우팅을 위한 설정
     location / {
         try_files $uri $uri/ /index.html;
+    }
+
+    # 백엔드 서버 프록시 (Socket.IO 포함)
+    location /server/ {
+        proxy_pass http://localhost:3050/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400;
     }
 
     # 정적 파일 캐싱
@@ -99,6 +107,17 @@ server {
     gzip_vary on;
     gzip_min_length 1024;
     gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json;
+}
+
+# HTTP → HTTPS 리다이렉트 서버 블록 (Certbot이 관리)
+server {
+    if ($host = debate.gbeai.net) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+    listen 80;
+    server_name debate.gbeai.net;
+    return 404; # managed by Certbot
 }
 EOF
 
@@ -121,23 +140,70 @@ echo "🔐 파일 권한 설정 중..."
 sudo chown -R www-data:www-data /var/www/debate.gbeai.net
 sudo chmod -R 755 /var/www/debate.gbeai.net
 
+# Nginx 설정 파일 적용
+echo "🔧 Nginx 설정 파일 적용 중..."
+sudo cp debate.gbeai.net.conf /etc/nginx/sites-available/
+sudo ln -sf /etc/nginx/sites-available/debate.gbeai.net.conf /etc/nginx/sites-enabled/
+
+# Nginx 설정 문법 검사
+echo "🔍 Nginx 설정 문법 검사 중..."
+if sudo nginx -t; then
+    echo "✅ Nginx 설정 문법 검사 통과"
+else
+    echo "❌ Nginx 설정에 오류가 있습니다. 수동으로 확인해주세요."
+    exit 1
+fi
+
+# SSL 인증서 확인 및 설정
+echo "🔐 SSL 인증서 확인 중..."
+if [ -f "/etc/letsencrypt/live/debate.gbeai.net/fullchain.pem" ]; then
+    echo "✅ SSL 인증서가 이미 존재합니다."
+else
+    echo "📜 SSL 인증서가 없습니다. Let's Encrypt로 생성을 시도합니다..."
+    
+    # Certbot 설치 확인
+    if ! command -v certbot &> /dev/null; then
+        echo "📥 Certbot 설치 중..."
+        sudo apt update
+        sudo apt install -y certbot python3-certbot-nginx
+    fi
+    
+    # 방화벽 설정 확인
+    echo "🔥 방화벽 설정 확인 중..."
+    sudo ufw allow 80 2>/dev/null || true
+    sudo ufw allow 443 2>/dev/null || true
+    
+    # SSL 인증서 생성 시도
+    echo "🔐 SSL 인증서 생성 중..."
+    if sudo certbot --nginx -d debate.gbeai.net --non-interactive --agree-tos --email gbeai@sc.gyo6.net; then
+        echo "✅ SSL 인증서 생성 성공!"
+    else
+        echo "⚠️  SSL 인증서 자동 생성에 실패했습니다."
+        echo "   수동으로 다음 명령어를 실행해주세요:"
+        echo "   sudo certbot --nginx -d debate.gbeai.net"
+    fi
+fi
+
+# Nginx 재시작
+echo "🔄 Nginx 서비스 재시작 중..."
+if sudo systemctl restart nginx; then
+    echo "✅ Nginx 재시작 성공"
+else
+    echo "❌ Nginx 재시작 실패. 수동으로 확인해주세요."
+    exit 1
+fi
+
 echo ""
 echo "🎉 배포 완료!"
 echo ""
-echo "📋 다음 단계:"
-echo "1. Nginx 설정 파일 적용:"
-echo "   sudo cp debate.gbeai.net.conf /etc/nginx/sites-available/"
-echo "   sudo ln -sf /etc/nginx/sites-available/debate.gbeai.net.conf /etc/nginx/sites-enabled/"
-echo "   sudo nginx -t"
-echo "   sudo systemctl reload nginx"
-echo ""
-echo "2. SSL 인증서 설정 (선택사항):"
-echo "   sudo certbot --nginx -d debate.gbeai.net"
-echo ""
-echo "3. 방화벽 설정 확인:"
-echo "   sudo ufw allow 80"
-echo "   sudo ufw allow 443"
+echo "📋 설정 완료 사항:"
+echo "✅ 프론트엔드 빌드 및 배포"
+echo "✅ Nginx 설정 적용"
+echo "✅ SSL 인증서 설정"
+echo "✅ HTTP → HTTPS 리다이렉트 설정"
+echo "✅ 백엔드 프록시 설정 (/server → localhost:3050)"
 echo ""
 echo "🌐 접속 가능한 주소:"
-echo "   http://debate.gbeai.net"
-echo "   https://debate.gbeai.net (SSL 설정 후)"
+echo "   https://debate.gbeai.net (메인 사이트)"
+echo "   https://debate.gbeai.net/server (백엔드 API)"
+echo ""
