@@ -21,7 +21,7 @@ const WelcomeView = () => {
           <div className='relative flex flex-col items-center justify-center mb-6'>
             <div className='absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur-2xl opacity-20 animate-pulse'></div>
             <img
-              src='/favicon.png'
+              src='/main-image.png'
               alt='AI 토론 배틀 로고'
               className='relative w-80 h-auto max-w-[70%]'
             />

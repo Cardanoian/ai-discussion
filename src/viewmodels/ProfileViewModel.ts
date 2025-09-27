@@ -20,7 +20,6 @@ export const useProfileViewModel = () => {
     win_rate: 0,
   });
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [isEditNicknameOpen, setIsEditNicknameOpen] = useState(false);
   const [newNickname, setNewNickname] = useState('');
   const navigate = useNavigate();
@@ -85,90 +84,6 @@ export const useProfileViewModel = () => {
   };
 
   /**
-   * 아바타 이미지 업로드를 처리하는 함수
-   * @param event - 파일 입력 이벤트
-   */
-  const handleAvatarUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    try {
-      setUploading(true);
-
-      if (!event.target.files || event.target.files.length === 0) {
-        return;
-      }
-
-      const file = event.target.files[0];
-
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        alert('이미지 파일만 업로드할 수 있습니다.');
-        return;
-      }
-
-      // Validate file size (5MB limit)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('파일 크기는 5MB 이하여야 합니다.');
-        return;
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
-
-      // Delete old avatar if exists
-      if (userProfile?.avatar_url) {
-        const oldFileName = userProfile.avatar_url.split('/').pop();
-        if (oldFileName) {
-          await supabase.storage.from('avatars').remove([oldFileName]);
-        }
-      }
-
-      // Upload file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-        });
-
-      if (uploadError) {
-        console.error('Error uploading avatar:', uploadError);
-        alert(`업로드 실패: ${uploadError.message}`);
-        return;
-      }
-
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('avatars').getPublicUrl(fileName);
-
-      // Update user profile with avatar URL
-      const { error: updateError } = await supabase
-        .from('user_profile')
-        .update({ avatar_url: publicUrl })
-        .eq('user_uuid', user?.id);
-
-      if (updateError) {
-        console.error('Error updating profile:', updateError);
-        alert(`프로필 업데이트 실패: ${updateError.message}`);
-        return;
-      }
-
-      // Refresh user data
-      if (user) {
-        await fetchUserStats(user.id);
-      }
-
-      alert('프로필 사진이 성공적으로 업데이트되었습니다!');
-    } catch (error) {
-      console.error('Error handling avatar upload:', error);
-      alert('업로드 중 오류가 발생했습니다.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  /**
    * 닉네임 업데이트를 처리하는 함수
    */
   const handleNicknameUpdate = async () => {
@@ -224,7 +139,6 @@ export const useProfileViewModel = () => {
     userProfile,
     userStats,
     loading,
-    uploading,
     isEditNicknameOpen,
     newNickname,
     rank,
@@ -234,7 +148,6 @@ export const useProfileViewModel = () => {
     setNewNickname,
 
     // Handlers
-    handleAvatarUpload,
     handleNicknameUpdate,
     handleLogout,
     getDisplayName,

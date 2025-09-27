@@ -23,9 +23,10 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { useMainViewModel } from '@/viewmodels/MainViewModel';
+import { getRankTitle } from '@/lib/constants';
 
 const MainView = () => {
-  const { user, avatarUrl, handleLogout } = useMainViewModel();
+  const { user, handleLogout } = useMainViewModel();
 
   return (
     <div className='flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50'>
@@ -53,16 +54,14 @@ const MainView = () => {
                   variant='ghost'
                   className='flex items-center space-x-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-0 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300 px-4 py-2'
                 >
-                  <div className='w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center overflow-hidden'>
-                    {avatarUrl ? (
-                      <img
-                        src={avatarUrl}
-                        alt='프로필 사진'
-                        className='w-full h-full object-cover'
-                      />
-                    ) : (
-                      <UserIcon className='w-4 h-4 text-white' />
-                    )}
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      user?.rating
+                        ? getRankTitle(user.rating).color
+                        : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                    }`}
+                  >
+                    <UserIcon className='w-4 h-4 text-white' />
                   </div>
                   <span className='font-medium'>{user.display_name}</span>
                 </Button>

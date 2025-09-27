@@ -9,7 +9,6 @@ import type { UserProfile } from '@/types/user';
  */
 export const useMainViewModel = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,7 +18,6 @@ export const useMainViewModel = () => {
           fetchUserProfile(session.user.id);
         } else {
           setUser(null);
-          setAvatarUrl(null);
         }
       }
     );
@@ -55,7 +53,6 @@ export const useMainViewModel = () => {
 
       if (profile) {
         setUser(profile);
-        setAvatarUrl(profile.avatar_url);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -72,7 +69,6 @@ export const useMainViewModel = () => {
 
   return {
     user,
-    avatarUrl,
     handleLogout,
   };
 };

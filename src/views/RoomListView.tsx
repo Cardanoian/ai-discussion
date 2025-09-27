@@ -1,7 +1,24 @@
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { LogIn, Users, Hourglass, Home, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  LogIn,
+  Users,
+  Hourglass,
+  Home,
+  Loader2,
+  LogOut,
+  User as UserIcon,
+} from 'lucide-react';
 import { useRoomListViewModel } from '@/viewmodels/RoomListViewModel';
 import CreateRoomModal from '@/components/modals/CreateRoomModal';
 import RoomDetailModal from '@/components/modals/RoomDetailModal';
@@ -56,6 +73,10 @@ const RoomListView = () => {
     handleReady,
     handleGoToMain,
     getPlayerDisplayName,
+
+    // 사용자 정보 (MainView와 동일한 기능을 위해 추가 필요)
+    user,
+    handleLogout,
   } = useRoomListViewModel();
 
   return (
@@ -72,14 +93,49 @@ const RoomListView = () => {
           <h1 className='text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-500'>
             토론 배틀 대전 목록
           </h1>
-          <Button
-            onClick={handleGoToMain}
-            variant='outline'
-            className='bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-white/20 hover:bg-white/90 dark:hover:bg-slate-800/90'
-          >
-            <Home className='w-4 h-4 mr-2' />
-            메인으로
-          </Button>
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='ghost'
+                  className='flex items-center space-x-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-0 hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300 px-4 py-2'
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      user?.rating
+                        ? getRankTitle(user.rating).color
+                        : 'bg-gradient-to-r from-purple-500 to-pink-500'
+                    }`}
+                  >
+                    <UserIcon className='w-4 h-4 text-white' />
+                  </div>
+                  <span className='font-medium'>{user.display_name}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align='end'
+                className='w-56 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 p-2'
+              >
+                <DropdownMenuLabel className='px-2 py-1.5'>
+                  내 계정
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <Link to='/profile'>
+                  <DropdownMenuItem className='px-2 py-2'>
+                    <UserIcon className='w-4 h-4 mr-2' />
+                    프로필
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className='text-red-600 dark:text-red-400 px-2 py-2'
+                >
+                  <LogOut className='w-4 h-4 mr-2' />
+                  로그아웃
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {/* Main content */}
@@ -205,8 +261,16 @@ const RoomListView = () => {
                 </div>
               </ScrollArea>
 
-              {/* Create Room Button */}
-              <div className='flex justify-center'>
+              {/* Create Room Button with Main Button */}
+              <div className='flex justify-center items-center gap-4'>
+                <Button
+                  onClick={handleGoToMain}
+                  variant='outline'
+                  className='bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-white/20 hover:bg-white/90 dark:hover:bg-slate-800/90'
+                >
+                  <Home className='w-4 h-4 mr-2' />
+                  메인으로
+                </Button>
                 <CreateRoomModal
                   isOpen={isCreateRoomOpen}
                   onOpenChange={setIsCreateRoomOpen}

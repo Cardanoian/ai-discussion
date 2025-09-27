@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import io, { Socket } from 'socket.io-client';
 import { supabase } from '@/lib/supabaseClient';
 import type { Player, Room, Subject } from '@/models/Room';
+import type { UserProfile } from '@/types/user';
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -35,6 +36,42 @@ export const useRoomListViewModel = () => {
   const [isGettingReady, setIsGettingReady] = useState(false);
   const [isChangingSubject, setIsChangingSubject] = useState(false);
 
+  // 사용자 정보 상태 (MainView와 동일한 기능)
+  const [user, setUser] = useState<UserProfile | null>(null);
+
+  /**
+   * 사용자 프로필 정보를 가져오는 함수
+   * @param userId - 사용자 ID
+   */
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('user_profile')
+        .select('*')
+        .eq('user_uuid', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user profile:', error);
+        return;
+      }
+
+      if (profile) {
+        setUser(profile);
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  };
+
+  /**
+   * 로그아웃을 처리하는 함수
+   */
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
   /**
    * 플레이어의 표시명을 가져오는 헬퍼 함수
    * @param player - 플레이어 객체
@@ -63,16 +100,28 @@ export const useRoomListViewModel = () => {
   );
 
   useEffect(() => {
-    // Get user authentication info
+    // Get user authentication info and profile
     const getUser = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
+        fetchUserProfile(user.id);
       }
     };
     getUser();
+
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        } else {
+          setUser(null);
+        }
+      }
+    );
 
     // Subjects will be fetched via Socket.IO after connection
 
@@ -160,6 +209,7 @@ export const useRoomListViewModel = () => {
 
     return () => {
       newSocket.disconnect();
+      authListener.subscription.unsubscribe();
     };
   }, [handleBattleStart, userId]);
 
@@ -332,5 +382,9 @@ export const useRoomListViewModel = () => {
     handleReady,
     handleGoToMain,
     getPlayerDisplayName,
+
+    // 사용자 정보 (MainView와 동일한 기능)
+    user,
+    handleLogout,
   };
 };
