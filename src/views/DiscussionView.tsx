@@ -3,6 +3,7 @@ import DiscussionHeader from '@/components/discussion/DiscussionHeader';
 import SpectatorView from '@/components/discussion/SpectatorView';
 import RefereeView from '@/components/discussion/RefereeView';
 import PlayerView from '@/components/discussion/PlayerView';
+import PlayerList from '@/components/discussion/PlayerList'; // PlayerList 컴포넌트 임포트
 import BattleResultModal from '@/components/modals/BattleResultModal';
 
 const DiscussionView = () => {
@@ -30,28 +31,17 @@ const DiscussionView = () => {
     isBattleResultModalOpen,
     setIsBattleResultModalOpen,
     userProfile,
+    players,
   } = useDiscussionViewModel();
 
-  // 메시지에서 플레이어 이름 추출
+  // 플레이어 이름 추출
   const getPlayerNames = () => {
-    const judgeMessages = messages.filter((msg) => msg.sender === 'judge');
-    if (judgeMessages.length > 0) {
-      const firstMessage = judgeMessages[0].text;
-      const agreeMatch = firstMessage.match(/찬성측인 ([^님]+)님/);
-      const disagreeMatch = firstMessage.match(/반대측인 ([^님]+)님/);
+    const agreePlayer = players.find((p) => p.position === 'agree');
+    const disagreePlayer = players.find((p) => p.position === 'disagree');
 
-      if (agreeMatch && disagreeMatch) {
-        return {
-          agree: agreeMatch[1],
-          disagree: disagreeMatch[1],
-        };
-      }
-    }
-
-    // 기본값
     return {
-      agree: userProfile?.display_name || '찬성측',
-      disagree: '반대측',
+      agree: agreePlayer?.displayName || userProfile?.display_name || '찬성측',
+      disagree: disagreePlayer?.displayName || '반대측',
     };
   };
 
@@ -61,6 +51,7 @@ const DiscussionView = () => {
       scrollAreaRef,
       battleEnded,
       userRole,
+      players,
     };
 
     switch (userRole) {
@@ -113,8 +104,13 @@ const DiscussionView = () => {
           formatTime={formatTime}
         />
 
-        {/* Main Content Area - 역할별 분기 */}
-        {renderRoleBasedContent()}
+        <div className='flex-1 flex gap-4 overflow-hidden'>
+          {/* 참여자 목록 */}
+          <PlayerList players={players} currentUserId={userId} />
+
+          {/* Main Content Area - 역할별 분기 */}
+          {renderRoleBasedContent()}
+        </div>
       </div>
 
       {/* 토론 결과 모달 */}

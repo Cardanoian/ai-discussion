@@ -44,6 +44,14 @@ export const useDiscussionViewModel = () => {
   const [userPosition, setUserPosition] = useState<'agree' | 'disagree' | null>(
     null
   );
+  const [players, setPlayers] = useState<
+    Array<{
+      userId: string;
+      role: 'player' | 'spectator' | 'referee';
+      position?: 'agree' | 'disagree';
+      displayName?: string;
+    }>
+  >([]);
   const [isRefereeScoreModalOpen, setIsRefereeScoreModalOpen] = useState(false);
   const [refereeScoreData, setRefereeScoreData] = useState<{
     agreePlayerName: string;
@@ -330,7 +338,12 @@ export const useDiscussionViewModel = () => {
       newSocket.on(
         'player_list_updated',
         (data: {
-          players: Array<{ userId: string; role: string; position?: string }>;
+          players: Array<{
+            userId: string;
+            role: 'player' | 'spectator' | 'referee';
+            position?: 'agree' | 'disagree';
+            displayName?: string;
+          }>;
         }) => {
           printDev(`받은 player_list_updated: ${JSON.stringify(data)}`);
 
@@ -338,6 +351,9 @@ export const useDiscussionViewModel = () => {
           const currentUserPlayer = data.players.find(
             (p) => p.userId === currentUserId
           );
+
+          // 플레이어 목록 상태 업데이트
+          setPlayers(data.players);
 
           if (currentUserPlayer) {
             printDev(`현재 사용자 정보: ${JSON.stringify(currentUserPlayer)}`);
@@ -785,5 +801,6 @@ export const useDiscussionViewModel = () => {
     isBattleResultModalOpen,
     setIsBattleResultModalOpen,
     userProfile,
+    players, // players 상태 추가
   };
 };

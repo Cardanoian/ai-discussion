@@ -25,6 +25,7 @@ export interface BaseDiscussionProps {
   scrollAreaRef: React.RefObject<HTMLDivElement | null>;
   battleEnded: boolean;
   userRole: 'player' | 'spectator' | 'referee';
+  players: Array<Player>; // players 속성 추가
 }
 
 export interface PlayerViewProps extends BaseDiscussionProps {
@@ -54,6 +55,13 @@ export interface HeaderProps {
   timerInfo: TimerInfo;
   timerState: TimerState;
   formatTime: (seconds: number) => string;
+}
+
+export interface Player {
+  userId: string;
+  role: 'player' | 'spectator' | 'referee';
+  position?: 'agree' | 'disagree';
+  displayName?: string;
 }
 
 export interface MessageRendererProps {
