@@ -1,3 +1,4 @@
+import printDev from '@/utils/printDev';
 import { supabase } from './supabaseClient';
 
 const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3050';
@@ -52,7 +53,7 @@ export const generateArguments = async (
     const data = await response.json();
     return data.arguments || [];
   } catch (error) {
-    console.error('AI 근거 생성 오류:', error);
+    printDev.error('AI 근거 생성 오류:', error);
     throw error instanceof Error
       ? error
       : new Error('AI 근거 생성에 실패했습니다.');
@@ -91,7 +92,7 @@ export const generateQuestionsAndAnswers = async (
     const data = await response.json();
     return data.questions || [];
   } catch (error) {
-    console.error('AI 질문/답변 생성 오류:', error);
+    printDev.error('AI 질문/답변 생성 오류:', error);
     throw error instanceof Error
       ? error
       : new Error('AI 질문/답변 생성에 실패했습니다.');
@@ -143,7 +144,7 @@ export const generateDiscussionHelp = async (
     const data = await response.json();
     return data.suggestion || '';
   } catch (error) {
-    console.error('AI 토론 도움 요청 오류:', error);
+    printDev.error('AI 토론 도움 요청 오류:', error);
     throw error instanceof Error
       ? error
       : new Error('AI 도움 요청 처리 중 오류가 발생했습니다.');

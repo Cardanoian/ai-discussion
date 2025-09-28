@@ -4,6 +4,7 @@ import type { User } from '@supabase/supabase-js';
 import type { UserProfile } from '@/models/Profile';
 import { UserProfileContext } from './UserProfileContext';
 import io from 'socket.io-client';
+import printDev from '@/utils/printDev';
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -34,7 +35,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
       async (_event, session) => {
         if (!mounted) return;
 
-        console.log('Auth state changed:', {
+        printDev.log('Auth state changed:', {
           event: _event,
           user: session?.user?.id,
         });
@@ -51,14 +52,14 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
     // Initial fetch - 새로고침 시 현재 사용자 상태 확인
     const initializeUser = async () => {
       try {
-        console.log('Initializing user...');
+        printDev.log('Initializing user...');
         const {
           data: { user },
         } = await supabase.auth.getUser();
 
         if (!mounted) return;
 
-        console.log('Initial user:', user?.id);
+        printDev.log('Initial user:', user?.id);
         setUser(user);
         if (user) {
           await fetchUserProfile(user.id);
@@ -67,7 +68,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
         }
         setLoading(false);
       } catch (error) {
-        console.error('Error initializing user:', error);
+        printDev.error('Error initializing user:', error);
         if (mounted) {
           setLoading(false);
         }
@@ -84,7 +85,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      console.log('백엔드에서 사용자 프로필 조회 시작:', userId);
+      printDev.log('백엔드에서 사용자 프로필 조회 시작:', userId);
 
       // 소켓 연결 생성
       const socket = io(serverUrl, {
@@ -93,7 +94,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
 
       // 소켓 연결 완료 후 사용자 프로필 요청
       socket.on('connect', () => {
-        console.log('소켓 연결 성공, 사용자 프로필 요청:', userId);
+        printDev.log('소켓 연결 성공, 사용자 프로필 요청:', userId);
         socket.emit(
           'get_user_profile',
           { userId },
@@ -101,15 +102,15 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
             userProfile: UserProfile | null;
             error: string | null;
           }) => {
-            console.log('백엔드에서 사용자 프로필 응답:', response);
+            printDev.log('백엔드에서 사용자 프로필 응답:', response);
 
             if (response.error) {
-              console.error('사용자 프로필 조회 오류:', response.error);
+              printDev.error('사용자 프로필 조회 오류:', response.error);
             } else if (response.userProfile) {
-              console.log('사용자 프로필 설정 성공:', response.userProfile);
+              printDev.log('사용자 프로필 설정 성공:', response.userProfile);
               setUserProfile(response.userProfile);
             } else {
-              console.log('사용자 프로필이 없음');
+              printDev.log('사용자 프로필이 없음');
               setUserProfile(null);
             }
 
@@ -121,19 +122,19 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
 
       // 연결 오류 처리
       socket.on('connect_error', (error) => {
-        console.error('소켓 연결 오류:', error);
+        printDev.error('소켓 연결 오류:', error);
         socket.disconnect();
       });
 
       // 연결 타임아웃 처리 (5초)
       setTimeout(() => {
         if (socket.connected) {
-          console.warn('소켓 연결 타임아웃');
+          printDev.log('소켓 연결 타임아웃');
           socket.disconnect();
         }
       }, 5000);
     } catch (error) {
-      console.error('사용자 프로필 조회 중 오류:', error);
+      printDev.error('사용자 프로필 조회 중 오류:', error);
     }
   };
 
@@ -149,7 +150,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
         .single();
 
       if (error) {
-        console.error('Error updating user profile:', error);
+        printDev.error('Error updating user profile:', error);
         throw error;
       }
 
@@ -157,7 +158,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
         setUserProfile(updatedProfile);
       }
     } catch (error) {
-      console.error('Error updating user profile:', error);
+      printDev.error('Error updating user profile:', error);
       throw error;
     }
   };
@@ -172,12 +173,12 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Error signing out:', error);
+        printDev.error('Error signing out:', error);
         throw error;
       }
       // 상태는 onAuthStateChange에서 자동으로 업데이트됨
     } catch (error) {
-      console.error('Error during logout:', error);
+      printDev.error('Error during logout:', error);
       throw error;
     }
   };
