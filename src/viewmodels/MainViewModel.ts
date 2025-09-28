@@ -7,7 +7,7 @@ import { useUserProfile } from '@/contexts/useUserProfile';
  * @returns 메인 화면 관련 상태와 함수들을 포함한 객체
  */
 export const useMainViewModel = () => {
-  const { userProfile } = useUserProfile();
+  const { userProfile, loading } = useUserProfile();
   const navigate = useNavigate();
 
   /**
@@ -20,6 +20,7 @@ export const useMainViewModel = () => {
 
   return {
     userProfile,
+    loading,
     handleLogout,
   };
 };

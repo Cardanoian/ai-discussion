@@ -131,6 +131,40 @@ export const useRoomListViewModel = () => {
         }
         setSubjects(data.subjects);
       });
+
+      // 소켓 연결 완료 후 방 복구 시도
+      if (userId) {
+        console.log('소켓 연결 완료, 방 복구 시도:', userId);
+        newSocket.emit(
+          'get_my_room',
+          { userId },
+          (data: { room: Room | null }) => {
+            console.log('get_my_room 응답:', data);
+            if (data.room) {
+              console.log('방 복구 성공:', data.room.roomId);
+              setCurrentRoom(data.room);
+
+              // 내 정보 업데이트
+              const me = data.room.players.find((p) => p.userId === userId);
+              if (me) {
+                setMyPosition(me.position || null);
+                setMyRole(me.role);
+              }
+
+              if (data.room.battleStarted) {
+                // 이미 토론이 시작된 방이면 바로 토론 화면으로 이동
+                console.log('토론 진행 중인 방으로 이동:', data.room.roomId);
+                handleBattleStart(data.room.roomId);
+              } else {
+                console.log('방 모달 열기');
+                setIsRoomModalOpen(true);
+              }
+            } else {
+              console.log('들어가 있는 방이 없음');
+            }
+          }
+        );
+      }
     });
 
     newSocket.on('connect_error', (error) => {

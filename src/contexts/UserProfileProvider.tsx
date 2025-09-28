@@ -3,6 +3,9 @@ import { supabase } from '@/lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 import type { UserProfile } from '@/models/Profile';
 import { UserProfileContext } from './UserProfileContext';
+import io from 'socket.io-client';
+
+const serverUrl = import.meta.env.VITE_SERVER_URL;
 
 export interface UserProfileContextType {
   user: User | null;
@@ -25,8 +28,16 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        if (!mounted) return;
+
+        console.log('Auth state changed:', {
+          event: _event,
+          user: session?.user?.id,
+        });
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchUserProfile(session.user.id);
@@ -37,62 +48,92 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
       }
     );
 
-    // Initial fetch
+    // Initial fetch - 새로고침 시 현재 사용자 상태 확인
     const initializeUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-      if (user) {
-        await fetchUserProfile(user.id);
+      try {
+        console.log('Initializing user...');
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!mounted) return;
+
+        console.log('Initial user:', user?.id);
+        setUser(user);
+        if (user) {
+          await fetchUserProfile(user.id);
+        } else {
+          setUserProfile(null);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Error initializing user:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
 
     initializeUser();
 
     return () => {
+      mounted = false;
       authListener.subscription.unsubscribe();
     };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data: profile, error } = await supabase
-        .from('user_profile')
-        .select('*')
-        .eq('user_uuid', userId)
-        .single();
+      console.log('백엔드에서 사용자 프로필 조회 시작:', userId);
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching user profile:', error);
-        return;
-      }
+      // 소켓 연결 생성
+      const socket = io(serverUrl, {
+        path: import.meta.env.DEV ? '/socket.io' : '/server/socket.io',
+      });
 
-      if (profile) {
-        setUserProfile(profile);
-      } else {
-        // 프로필이 없으면 기본 프로필 생성
-        const { data: newProfile, error: createError } = await supabase
-          .from('user_profile')
-          .insert({
-            user_uuid: userId,
-            display_name: null,
-            rating: 1500,
-            wins: 0,
-            loses: 0,
-          })
-          .select()
-          .single();
+      // 소켓 연결 완료 후 사용자 프로필 요청
+      socket.on('connect', () => {
+        console.log('소켓 연결 성공, 사용자 프로필 요청:', userId);
+        socket.emit(
+          'get_user_profile',
+          { userId },
+          (response: {
+            userProfile: UserProfile | null;
+            error: string | null;
+          }) => {
+            console.log('백엔드에서 사용자 프로필 응답:', response);
 
-        if (createError) {
-          console.error('Error creating user profile:', createError);
-        } else {
-          setUserProfile(newProfile);
+            if (response.error) {
+              console.error('사용자 프로필 조회 오류:', response.error);
+            } else if (response.userProfile) {
+              console.log('사용자 프로필 설정 성공:', response.userProfile);
+              setUserProfile(response.userProfile);
+            } else {
+              console.log('사용자 프로필이 없음');
+              setUserProfile(null);
+            }
+
+            // 소켓 연결 해제
+            socket.disconnect();
+          }
+        );
+      });
+
+      // 연결 오류 처리
+      socket.on('connect_error', (error) => {
+        console.error('소켓 연결 오류:', error);
+        socket.disconnect();
+      });
+
+      // 연결 타임아웃 처리 (5초)
+      setTimeout(() => {
+        if (socket.connected) {
+          console.warn('소켓 연결 타임아웃');
+          socket.disconnect();
         }
-      }
+      }, 5000);
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('사용자 프로필 조회 중 오류:', error);
     }
   };
 

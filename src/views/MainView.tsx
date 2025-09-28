@@ -12,7 +12,7 @@ import { useMainViewModel } from '@/viewmodels/MainViewModel';
 import ProfileButton from '@/components/ProfileButton';
 
 const MainView = () => {
-  const { userProfile } = useMainViewModel();
+  const { userProfile, loading } = useMainViewModel();
 
   return (
     <div className='flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50'>
@@ -33,7 +33,9 @@ const MainView = () => {
               AI 토론 배틀
             </h1>
           </div>
-          {userProfile && <ProfileButton userProfile={userProfile} />}
+          {!loading && userProfile && (
+            <ProfileButton userProfile={userProfile} />
+          )}
         </header>
 
         <main className='flex-grow grid md:grid-cols-2 gap-8 animate-in fade-in-50 duration-700'>

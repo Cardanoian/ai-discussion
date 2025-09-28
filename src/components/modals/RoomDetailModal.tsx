@@ -85,7 +85,10 @@ const RoomDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-[900px] max-h-[80vh] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 overflow-hidden'>
+      <DialogContent
+        className='sm:max-w-[900px] max-h-[80vh] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20 overflow-hidden flex flex-col'
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader className='relative'>
           <div className='flex items-center justify-between'>
             <DialogTitle className='text-2xl bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500'>
@@ -103,7 +106,7 @@ const RoomDetailModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 py-4 max-h-[60vh] overflow-y-auto'>
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 py-4 flex-1 overflow-y-auto'>
           {/* Left Panel: Room Info & Subject */}
           <div className='space-y-4'>
             <Card className='bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20'>
@@ -376,7 +379,7 @@ const RoomDetailModal = ({
           </div>
         </div>
 
-        <DialogFooter className='flex flex-col sm:flex-row gap-3'>
+        <DialogFooter className='flex flex-col sm:flex-row gap-3 flex-shrink-0'>
           <Button
             onClick={onLeaveRoom}
             variant='outline'
