@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { generateDiscussionHelp } from '@/lib/apiClient';
 import type { Message } from '@/models/Discussion';
 import type { UserProfile } from '@/models/Profile';
+import printDev from '@/utils/printDev';
 
 // 서버에서 받는 메시지 타입
 interface ServerMessage {
@@ -111,34 +112,26 @@ export const useDiscussionViewModel = () => {
   };
 
   /**
-   * 개발 환경에서만 출력하는 함수
-   */
-  const printDev = (message: string) => {
-    if (!import.meta.env.DEV) return;
-    console.log(message);
-  };
-
-  /**
    * 사용자의 토론 자료를 미리 로드하는 함수
    */
   const preloadUserDocs = async (roomId: string, currentUserId: string) => {
     setIsLoadingDocs(true);
     try {
-      printDev(`사용자 자료 미리 로드 시작:${{ roomId, currentUserId }}`);
+      printDev.log(`사용자 자료 미리 로드 시작:${{ roomId, currentUserId }}`);
 
       // roomId로부터 실제 subject_id를 가져오기 위해 rooms 테이블 조회
-      printDev(`rooms 테이블 조회 시작, roomId: ${roomId}`);
+      printDev.log(`rooms 테이블 조회 시작, roomId: ${roomId}`);
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .select('subject_id')
         .eq('uuid', roomId)
         .single();
 
-      printDev(`rooms 테이블 조회 결과:, ${{ roomData, roomError }}`);
+      printDev.error(`rooms 테이블 조회 결과:, ${{ roomData, roomError }}`);
 
       if (roomError || !roomData?.subject_id) {
-        console.error('방 정보 조회 오류:', roomError);
-        printDev('빈 자료로 설정하고 종료');
+        printDev.error('방 정보 조회 오류:', roomError);
+        printDev.log('빈 자료로 설정하고 종료');
         // 방 정보를 가져올 수 없는 경우 빈 자료로 설정
         setUserDocs({
           agree: { reasons: [], questions: [] },
@@ -148,16 +141,18 @@ export const useDiscussionViewModel = () => {
       }
 
       const actualSubjectId = roomData.subject_id;
-      printDev(`실제 subject_id: ${actualSubjectId}`);
+      printDev.log(`실제 subject_id: ${actualSubjectId}`);
 
       // 실제 subject_id로 사용자 자료 조회
-      printDev(`사용자 자료 조회 시작:, ${{ actualSubjectId, currentUserId }}`);
+      printDev.log(
+        `사용자 자료 조회 시작:, ${{ actualSubjectId, currentUserId }}`
+      );
       const [agreeData, disagreeData] = await Promise.all([
         getUserDocs(actualSubjectId, false), // 찬성 자료
         getUserDocs(actualSubjectId, true), // 반대 자료
       ]);
 
-      printDev(`사용자 자료 조회 완료: ${{ agreeData, disagreeData }}`);
+      printDev.log(`사용자 자료 조회 완료: ${{ agreeData, disagreeData }}`);
 
       const processedDocs = {
         agree: agreeData || { reasons: [], questions: [] },
@@ -165,9 +160,9 @@ export const useDiscussionViewModel = () => {
       };
 
       setUserDocs(processedDocs);
-      printDev(`사용자 자료 미리 로드 완료: ${processedDocs}`);
+      printDev.log(`사용자 자료 미리 로드 완료: ${processedDocs}`);
     } catch (error) {
-      console.error('자료 미리 로드 오류:', error);
+      printDev.error('자료 미리 로드 오류:', error);
       setUserDocs({
         agree: { reasons: [], questions: [] },
         disagree: { reasons: [], questions: [] },
@@ -181,7 +176,7 @@ export const useDiscussionViewModel = () => {
     // Get roomId from navigation state
     const stateRoomId = location.state?.roomId;
     if (!stateRoomId) {
-      console.error('roomId가 없습니다.');
+      printDev.error('roomId가 없습니다.');
       navigate('/waiting-room');
       return;
     }
@@ -203,7 +198,7 @@ export const useDiscussionViewModel = () => {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        console.error('사용자 인증 정보가 없습니다.');
+        printDev.error('사용자 인증 정보가 없습니다.');
         navigate('/');
         return;
       }
@@ -213,7 +208,7 @@ export const useDiscussionViewModel = () => {
 
       // 사용자 프로필 정보 로드 (한 번만)
       try {
-        printDev(`사용자 프로필 조회 시작: ${currentUserId}`);
+        printDev.log(`사용자 프로필 조회 시작: ${currentUserId}`);
         const { data: profile, error } = await supabase
           .from('user_profile')
           .select('*')
@@ -221,7 +216,7 @@ export const useDiscussionViewModel = () => {
           .single();
 
         if (error) {
-          console.error('사용자 프로필 조회 오류:', error);
+          printDev.error('사용자 프로필 조회 오류:', error);
           // 기본값으로 설정 (실버 등급)
           const defaultProfile = {
             user_uuid: currentUserId,
@@ -234,14 +229,14 @@ export const useDiscussionViewModel = () => {
             is_admin: false,
           };
           setUserProfile(defaultProfile);
-          printDev(`기본 프로필 설정: ${defaultProfile}`);
+          printDev.log(`기본 프로필 설정: ${defaultProfile}`);
         } else if (profile) {
           setUserProfile(profile);
           // 사용자 역할 설정 (관리자면 심판, 아니면 일단 관전자로 시작)
           setUserRole(profile.is_admin ? 'referee' : 'spectator');
-          printDev(`사용자 프로필 로드 완료: ${profile}`);
+          printDev.log(`사용자 프로필 로드 완료: ${profile}`);
         } else {
-          printDev('프로필 데이터가 없음');
+          printDev.log('프로필 데이터가 없음');
           // 프로필이 없는 경우에도 기본값 설정
           const defaultProfile = {
             user_uuid: currentUserId,
@@ -254,10 +249,10 @@ export const useDiscussionViewModel = () => {
             is_admin: false,
           };
           setUserProfile(defaultProfile);
-          printDev(`기본 프로필 설정 (데이터 없음): ${defaultProfile}`);
+          printDev.log(`기본 프로필 설정 (데이터 없음): ${defaultProfile}`);
         }
       } catch (error) {
-        console.error('사용자 프로필 로드 오류:', error);
+        printDev.error('사용자 프로필 로드 오류:', error);
         // catch 블록에서도 기본값 설정
         const defaultProfile = {
           user_uuid: currentUserId,
@@ -270,7 +265,7 @@ export const useDiscussionViewModel = () => {
           is_admin: false,
         };
         setUserProfile(defaultProfile);
-        printDev(`기본 프로필 설정 (catch): ${defaultProfile}`);
+        printDev.log(`기본 프로필 설정 (catch): ${defaultProfile}`);
       }
 
       const newSocket = io(serverUrl, {
@@ -279,37 +274,39 @@ export const useDiscussionViewModel = () => {
       setSocket(newSocket);
 
       newSocket.on('connect', () => {
-        printDev(`Connected to discussion socket server: ${newSocket.id}`);
+        printDev.log(`Connected to discussion socket server: ${newSocket.id}`);
 
         // 연결 후 즉시 룸에 join하고 discussionView 준비 완료 신호 보내기
-        printDev(`룸에 join: ${stateRoomId}`);
+        printDev.log(`룸에 join: ${stateRoomId}`);
         newSocket.emit('join_discussion_room', {
           roomId: stateRoomId,
           userId: currentUserId,
         });
 
-        printDev('discussionView 준비 완료, 서버에 신호 전송');
+        printDev.log('discussionView 준비 완료, 서버에 신호 전송');
         newSocket.emit('discussion_view_ready', {
           roomId: stateRoomId,
           userId: currentUserId,
         });
 
         // 서버에서 메시지 목록 요청
-        printDev('서버에서 메시지 목록 요청');
+        printDev.log('서버에서 메시지 목록 요청');
         newSocket.emit('get_messages', { roomId: stateRoomId });
       });
 
       newSocket.on('disconnect', () => {
-        printDev('소켓 연결 해제됨');
+        printDev.log('소켓 연결 해제됨');
       });
 
       newSocket.on('connect_error', (error) => {
-        console.error('소켓 연결 오류:', error);
+        printDev.error('소켓 연결 오류:', error);
       });
 
       // 서버에서 관리하는 메시지 목록 업데이트 리스너
       newSocket.on('messages_updated', (serverMessages: ServerMessage[]) => {
-        printDev(`받은 messages_updated: ${serverMessages.length}개 메시지`);
+        printDev.log(
+          `받은 messages_updated: ${serverMessages.length}개 메시지`
+        );
 
         // 서버 메시지를 클라이언트 메시지 형식으로 변환
         const clientMessages: Message[] = serverMessages.map((msg) => ({
@@ -324,7 +321,7 @@ export const useDiscussionViewModel = () => {
       newSocket.on(
         'ai_judge_message',
         (data: { message: string; stage: number }) => {
-          printDev(`받은 ai_judge_message: ${data}`);
+          printDev.log(`받은 ai_judge_message: ${data}`);
           setCurrentStage(data.stage);
 
           // 토론 시작 시 사용자 자료 미리 로드
@@ -345,7 +342,7 @@ export const useDiscussionViewModel = () => {
             displayName?: string;
           }>;
         }) => {
-          printDev(`받은 player_list_updated: ${JSON.stringify(data)}`);
+          printDev.log(`받은 player_list_updated: ${JSON.stringify(data)}`);
 
           // 현재 사용자가 플레이어 목록에 있는지 확인
           const currentUserPlayer = data.players.find(
@@ -356,7 +353,9 @@ export const useDiscussionViewModel = () => {
           setPlayers(data.players);
 
           if (currentUserPlayer) {
-            printDev(`현재 사용자 정보: ${JSON.stringify(currentUserPlayer)}`);
+            printDev.log(
+              `현재 사용자 정보: ${JSON.stringify(currentUserPlayer)}`
+            );
 
             // 사용자 역할 설정 - 관리자가 아닌 경우에만 역할 변경
             if (!userProfile?.is_admin) {
@@ -366,7 +365,7 @@ export const useDiscussionViewModel = () => {
                 | 'referee';
               if (newRole !== userRole) {
                 setUserRole(newRole);
-                printDev(`역할 변경: ${userRole} -> ${newRole}`);
+                printDev.log(`역할 변경: ${userRole} -> ${newRole}`);
               }
             }
 
@@ -376,7 +375,7 @@ export const useDiscussionViewModel = () => {
                 currentUserPlayer.position === 'agree' ? 'agree' : 'disagree';
               if (position !== userPosition) {
                 setUserPosition(position);
-                printDev(`사용자 입장 설정: ${position}`);
+                printDev.log(`사용자 입장 설정: ${position}`);
               }
             }
           }
@@ -392,7 +391,9 @@ export const useDiscussionViewModel = () => {
           message: string;
           stageDescription: string;
         }) => {
-          printDev(`받은 turn_info: ${data}, 현재 userId: ${currentUserId}`);
+          printDev.log(
+            `받은 turn_info: ${data}, 현재 userId: ${currentUserId}`
+          );
           setCurrentTurn(data.currentPlayerId);
           const isMyNewTurn = data.currentPlayerId === currentUserId;
           setIsMyTurn(isMyNewTurn);
@@ -415,7 +416,7 @@ export const useDiscussionViewModel = () => {
           humanScore?: { agree: number; disagree: number };
           aiScore?: { agree: number; disagree: number };
         }) => {
-          printDev(`받은 battle_result: ${JSON.stringify(result)}`);
+          printDev.log(`받은 battle_result: ${JSON.stringify(result)}`);
           setBattleEnded(true);
           setBattleResult(result);
           setIsBattleResultModalOpen(true);
@@ -431,7 +432,7 @@ export const useDiscussionViewModel = () => {
           maxPenaltyPoints: number;
           message: string;
         }) => {
-          printDev(`받은 penalty_applied: ${data}`);
+          printDev.log(`받은 penalty_applied: ${data}`);
 
           // 감점 정보 업데이트
           setTimerInfo((prev) => ({
@@ -453,13 +454,13 @@ export const useDiscussionViewModel = () => {
       newSocket.on(
         'overtime_granted',
         (data: { userId: string; overtimeLimit: number; message: string }) => {
-          printDev(`받은 overtime_granted: ${data}`);
+          printDev.log(`받은 overtime_granted: ${data}`);
         }
       );
 
       // Listen for battle errors
       newSocket.on('battle_error', (error: string) => {
-        printDev(`받은 battle_error: ${error}`);
+        printDev.log(`받은 battle_error: ${error}`);
       });
 
       // Listen for referee score modal request
@@ -474,7 +475,7 @@ export const useDiscussionViewModel = () => {
             winner: string;
           };
         }) => {
-          printDev(`받은 show_referee_score_modal: ${data}`);
+          printDev.log(`받은 show_referee_score_modal: ${data}`);
           setRefereeScoreData(data);
           setIsRefereeScoreModalOpen(true);
         }
@@ -492,7 +493,7 @@ export const useDiscussionViewModel = () => {
           roundTimeLimit: number;
           totalTimeLimit: number;
         }) => {
-          printDev(`받은 timer_update: ${data}`);
+          printDev.log(`받은 timer_update: ${data}`);
 
           // 서버에서 받은 시간 정보로 타이머 상태 업데이트
           setTimerState({
@@ -567,7 +568,7 @@ export const useDiscussionViewModel = () => {
    * @param message - 전송할 메시지 내용
    */
   const sendMessage = (message: string) => {
-    printDev(
+    printDev.log(
       `sendMessage 호출됨: ${{
         socket: !!socket,
         message: message.trim(),
@@ -579,7 +580,7 @@ export const useDiscussionViewModel = () => {
     );
 
     if (socket && message.trim() && isMyTurn && !battleEnded && roomId) {
-      printDev(
+      printDev.log(
         `send_message 이벤트 발송: ${{
           roomId,
           userId,
@@ -588,7 +589,7 @@ export const useDiscussionViewModel = () => {
       );
       socket.emit('send_message', { roomId, userId, message: message.trim() });
     } else {
-      printDev(
+      printDev.log(
         `sendMessage 조건 실패: ${{
           hasSocket: !!socket,
           hasMessage: !!message.trim(),
@@ -616,14 +617,14 @@ export const useDiscussionViewModel = () => {
       // 현재 사용자의 입장 파악 (찬성/반대)
       const userPosition = getUserPosition();
       if (!userPosition) {
-        console.error('사용자 입장을 파악할 수 없습니다.');
+        printDev.error('사용자 입장을 파악할 수 없습니다.');
         return null;
       }
 
       // 토론 주제 정보 가져오기
       const subject = await getCurrentSubject();
       if (!subject) {
-        console.error('토론 주제를 가져올 수 없습니다.');
+        printDev.error('토론 주제를 가져올 수 없습니다.');
         return null;
       }
 
@@ -634,16 +635,16 @@ export const useDiscussionViewModel = () => {
       };
       if (userDocs) {
         docs = userPosition === 'agree' ? userDocs.agree : userDocs.disagree;
-        printDev(`캐시된 자료 사용: ${{ userPosition, docs }}`);
+        printDev.log(`캐시된 자료 사용: ${{ userPosition, docs }}`);
       } else {
         // 캐시가 없는 경우 빈 배열 사용 (DB 재조회 방지)
-        printDev(`캐시가 없어 빈 자료로 AI 호출: ${{ userPosition }}`);
+        printDev.log(`캐시가 없어 빈 자료로 AI 호출: ${{ userPosition }}`);
         docs = { reasons: [], questions: [] };
       }
 
       // 캐시된 사용자 등급 정보 사용 (기본값: 1600 - 실버 등급)
       const userRating = userProfile?.rating || 1600;
-      printDev(`사용자 등급 정보: ${{ userRating, userProfile }}`);
+      printDev.log(`사용자 등급 정보: ${{ userRating, userProfile }}`);
 
       // AI에게 도움 요청 (사용자 등급 정보 포함)
       const suggestion = await generateDiscussionHelp(
@@ -659,7 +660,7 @@ export const useDiscussionViewModel = () => {
 
       return suggestion;
     } catch (error) {
-      console.error('AI 도움 요청 오류:', error);
+      printDev.error('AI 도움 요청 오류:', error);
       return null;
     } finally {
       setIsRequestingAiHelp(false);
@@ -718,7 +719,7 @@ export const useDiscussionViewModel = () => {
 
       return null;
     } catch (error) {
-      console.error('주제 정보 가져오기 오류:', error);
+      printDev.error('주제 정보 가져오기 오류:', error);
       return null;
     }
   };
@@ -737,7 +738,7 @@ export const useDiscussionViewModel = () => {
         .single();
 
       if (error) {
-        console.error('사용자 자료 조회 오류:', error);
+        printDev.error('사용자 자료 조회 오류:', error);
         return { reasons: [], questions: [] };
       }
 
@@ -750,7 +751,7 @@ export const useDiscussionViewModel = () => {
 
       return { reasons: [], questions: [] };
     } catch (error) {
-      console.error('사용자 자료 가져오기 오류:', error);
+      printDev.error('사용자 자료 가져오기 오류:', error);
       return { reasons: [], questions: [] };
     }
   };

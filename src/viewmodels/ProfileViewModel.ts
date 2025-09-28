@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getRankTitle } from '@/lib/constants';
 import { useUserProfile } from '@/contexts/useUserProfile';
 import type { UserStats } from '@/models/Profile';
+import printDev from '@/utils/printDev';
 
 /**
  * 프로필 화면의 상태와 로직을 관리하는 ViewModel 훅
@@ -54,7 +55,7 @@ export const useProfileViewModel = () => {
       setNewNickname('');
       alert('표시명이 성공적으로 업데이트되었습니다!');
     } catch (error) {
-      console.error('Error updating display name:', error);
+      printDev.error('Error updating display name:', error);
       alert('표시명 업데이트 중 오류가 발생했습니다.');
     }
   };

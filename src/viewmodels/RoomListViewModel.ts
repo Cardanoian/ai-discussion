@@ -4,6 +4,7 @@ import io, { Socket } from 'socket.io-client';
 import { supabase } from '@/lib/supabaseClient';
 import type { Player, Room, Subject } from '@/models/Room';
 import { useUserProfile } from '@/contexts/useUserProfile';
+import printDev from '@/utils/printDev';
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -99,12 +100,12 @@ export const useRoomListViewModel = () => {
 
     // Subjects will be fetched via Socket.IO after connection
 
-    if (import.meta.env.DEV) {
-      console.log('Socket.IO 연결 시도:', {
+    printDev.log(
+      `Socket.IO 연결 시도: ${JSON.stringify({
         serverUrl,
         path: '/socket.io',
-      });
-    }
+      })}`
+    );
 
     const newSocket = io(serverUrl, {
       path: import.meta.env.DEV ? '/socket.io' : '/server/socket.io',
@@ -112,36 +113,30 @@ export const useRoomListViewModel = () => {
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      if (import.meta.env.DEV) {
-        console.log('Socket.IO 연결 성공:', newSocket.id);
-      }
+      printDev.log(`Socket.IO 연결 성공: ${newSocket.id}`);
 
       // Get rooms
       newSocket.emit('get_rooms', (data: { rooms: Room[] }) => {
-        if (import.meta.env.DEV) {
-          console.log('방 목록 수신:', data.rooms);
-        }
+        printDev.log(`방 목록 수신: ${JSON.stringify(data.rooms)}`);
         setRooms(data.rooms);
       });
 
       // Get subjects via Socket.IO
       newSocket.emit('get_subjects', (data: { subjects: Subject[] }) => {
-        if (import.meta.env.DEV) {
-          console.log('주제 목록 수신:', data.subjects);
-        }
+        printDev.log(`주제 목록 수신: ${JSON.stringify(data.subjects)}`);
         setSubjects(data.subjects);
       });
 
       // 소켓 연결 완료 후 방 복구 시도
       if (userId) {
-        console.log('소켓 연결 완료, 방 복구 시도:', userId);
+        printDev.log(`소켓 연결 완료, 방 복구 시도: ${userId}`);
         newSocket.emit(
           'get_my_room',
           { userId },
           (data: { room: Room | null }) => {
-            console.log('get_my_room 응답:', data);
+            printDev.log(`get_my_room 응답: ${JSON.stringify(data)}`);
             if (data.room) {
-              console.log('방 복구 성공:', data.room.roomId);
+              printDev.log(`방 복구 성공: ${data.room.roomId}`);
               setCurrentRoom(data.room);
 
               // 내 정보 업데이트
@@ -153,14 +148,14 @@ export const useRoomListViewModel = () => {
 
               if (data.room.battleStarted) {
                 // 이미 토론이 시작된 방이면 바로 토론 화면으로 이동
-                console.log('토론 진행 중인 방으로 이동:', data.room.roomId);
+                printDev.log(`토론 진행 중인 방으로 이동: ${data.room.roomId}`);
                 handleBattleStart(data.room.roomId);
               } else {
-                console.log('방 모달 열기');
+                printDev.log('방 모달 열기');
                 setIsRoomModalOpen(true);
               }
             } else {
-              console.log('들어가 있는 방이 없음');
+              printDev.log('들어가 있는 방이 없음');
             }
           }
         );
@@ -168,13 +163,11 @@ export const useRoomListViewModel = () => {
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('Socket.IO 연결 오류:', error);
+      printDev.error(`Socket.IO 연결 오류: ${error}`);
     });
 
     newSocket.on('disconnect', (reason) => {
-      if (import.meta.env.DEV) {
-        console.log('Socket.IO 연결 해제:', reason);
-      }
+      printDev.error(`Socket.IO 연결 해제: ${reason}`);
     });
 
     newSocket.on('rooms_update', (updatedRooms: Room[]) => {
@@ -227,6 +220,7 @@ export const useRoomListViewModel = () => {
     // Handle role selection error
     newSocket.on('role_select_error', (data: { error: string }) => {
       alert(data.error);
+      printDev.error(`역할 선택 오류: ${data.error}`);
     });
 
     return () => {
@@ -251,8 +245,10 @@ export const useRoomListViewModel = () => {
             setIsRoomModalOpen(true);
             setIsCreateRoomOpen(false);
             setSelectedSubject('');
+            printDev.log(`방 생성 성공: ${JSON.stringify(ack.room)}`);
           } else {
             alert(ack.error);
+            printDev.log(`방 생성 실패: ${ack.error}`);
           }
         }
       );
@@ -274,8 +270,10 @@ export const useRoomListViewModel = () => {
           if (ack.room) {
             setCurrentRoom(ack.room);
             setIsRoomModalOpen(true);
+            printDev.log(`방 참가 성공: ${JSON.stringify(ack.room)}`);
           } else {
             alert(ack.error);
+            printDev.log(`방 참가 실패: ${ack.error}`);
           }
         }
       );
@@ -307,8 +305,10 @@ export const useRoomListViewModel = () => {
           setIsChangingSubject(false);
           if (ack.success) {
             setIsChangeSubjectOpen(false);
+            printDev.log(`주제 변경 성공: ${selectedSubject}`);
           } else {
             alert(ack.error || '주제 변경에 실패했습니다.');
+            printDev.log(`주제 변경 실패: ${ack.error}`);
           }
         }
       );

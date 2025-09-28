@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabaseClient';
+import printDev from '@/utils/printDev';
 
 /**
  * 환영 화면의 상태와 로직을 관리하는 ViewModel 훅
@@ -16,7 +17,7 @@ export const useWelcomeViewModel = () => {
       },
     });
     if (error) {
-      console.error('Error logging in with Google:', error);
+      printDev.error('Error logging in with Google:', error);
     }
   };
 
@@ -31,7 +32,7 @@ export const useWelcomeViewModel = () => {
       },
     });
     if (error) {
-      console.error('Error logging in with Kakao:', error);
+      printDev.error('Error logging in with Kakao:', error);
     }
   };
 

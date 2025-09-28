@@ -7,6 +7,7 @@ import {
 } from '@/lib/apiClient';
 import type { User } from '@supabase/supabase-js';
 import type { Subject, Question } from '@/models/Docs';
+import printDev from '@/utils/printDev';
 
 /**
  * 토론 자료 관리 화면의 상태와 로직을 관리하는 ViewModel 훅
@@ -40,7 +41,7 @@ export const useDocsViewModel = () => {
         .select('*')
         .order('created_at');
       if (error) {
-        console.error('Error fetching subjects:', error);
+        printDev.error('Error fetching subjects:', error);
       } else {
         setSubjects(data);
       }
@@ -62,7 +63,7 @@ export const useDocsViewModel = () => {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching doc:', error);
+        printDev.error('Error fetching doc:', error);
         setReasons([]);
         setQuestions([]);
         return;
@@ -179,7 +180,7 @@ export const useDocsViewModel = () => {
       .select();
 
     if (error) {
-      console.error('Error saving doc:', error);
+      printDev.error('Error saving doc:', error);
       alert('자료 저장에 실패했습니다.');
     } else {
       const positionText = position === 'favor' ? '찬성' : '반대';
@@ -220,7 +221,7 @@ export const useDocsViewModel = () => {
 
       alert(`AI가 ${generatedArguments.length}개의 근거를 생성했습니다!`);
     } catch (error) {
-      console.error('AI 근거 생성 오류:', error);
+      printDev.error('AI 근거 생성 오류:', error);
       alert(
         error instanceof Error ? error.message : 'AI 근거 생성에 실패했습니다.'
       );
@@ -268,7 +269,7 @@ export const useDocsViewModel = () => {
 
       alert(`AI가 ${generatedQA.length}개의 질문/답변을 생성했습니다!`);
     } catch (error) {
-      console.error('AI 질문/답변 생성 오류:', error);
+      printDev.error('AI 질문/답변 생성 오류:', error);
       alert(
         error instanceof Error
           ? error.message
