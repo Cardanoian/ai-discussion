@@ -10,6 +10,7 @@ import {
 import { Sparkles, BrainCircuit, ArrowRight } from 'lucide-react';
 import { useMainViewModel } from '@/viewmodels/MainViewModel';
 import ProfileButton from '@/components/ProfileButton';
+import ThemeToggleButton from '@/components/ThemeToggleButton';
 
 const MainView = () => {
   const { userProfile, loading } = useMainViewModel();
@@ -33,9 +34,12 @@ const MainView = () => {
               AI 토론 배틀
             </h1>
           </div>
-          {!loading && userProfile && (
-            <ProfileButton userProfile={userProfile} />
-          )}
+          <div className='flex items-center gap-2'>
+            <ThemeToggleButton />
+            {!loading && userProfile && (
+              <ProfileButton userProfile={userProfile} />
+            )}
+          </div>
         </header>
 
         <main className='flex-grow grid md:grid-cols-2 gap-8 animate-in fade-in-50 duration-700'>

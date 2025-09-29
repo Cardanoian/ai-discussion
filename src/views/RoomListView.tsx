@@ -7,6 +7,7 @@ import CreateRoomModal from '@/components/modals/CreateRoomModal';
 import RoomDetailModal from '@/components/modals/RoomDetailModal';
 import { getRankTitle } from '@/lib/constants';
 import ProfileButton from '@/components/ProfileButton';
+import ThemeToggleButton from '@/components/ThemeToggleButton';
 
 const RoomListView = () => {
   // 승률 계산 함수
@@ -79,7 +80,10 @@ const RoomListView = () => {
           <h1 className='text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-500'>
             토론 배틀 대전 목록
           </h1>
-          {userProfile && <ProfileButton userProfile={userProfile} />}
+          <div className='flex items-center gap-2'>
+            <ThemeToggleButton />
+            {userProfile && <ProfileButton userProfile={userProfile} />}
+          </div>
         </div>
 
         {/* Main content */}

@@ -5,6 +5,7 @@ import RefereeView from '@/components/discussion/RefereeView';
 import PlayerView from '@/components/discussion/PlayerView';
 import PlayerList from '@/components/discussion/PlayerList'; // PlayerList 컴포넌트 임포트
 import BattleResultModal from '@/components/modals/BattleResultModal';
+import ThemeToggleButton from '@/components/ThemeToggleButton';
 
 const DiscussionView = () => {
   const {
@@ -94,6 +95,11 @@ const DiscussionView = () => {
 
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50 dark:from-slate-900 dark:via-slate-800 dark:to-purple-900/50'>
+      {/* Theme button - positioned absolutely in top right */}
+      <div className='absolute top-4 right-4 z-20'>
+        <ThemeToggleButton />
+      </div>
+
       {/* Background decorative elements */}
       <div className='absolute inset-0 overflow-hidden pointer-events-none'>
         <div className='absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse'></div>

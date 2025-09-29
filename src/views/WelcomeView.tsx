@@ -2,12 +2,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BrainCircuit, Sparkles } from 'lucide-react';
 import { useWelcomeViewModel } from '@/viewmodels/WelcomeViewModel';
+import ThemeToggleButton from '@/components/ThemeToggleButton';
 
 const WelcomeView = () => {
   const { handleGoogleLogin, handleKakaoLogin } = useWelcomeViewModel();
 
   return (
     <div className='flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900'>
+      {/* Theme button - positioned absolutely in top right */}
+      <div className='absolute top-4 right-4 z-10'>
+        <ThemeToggleButton />
+      </div>
+
       {/* Background decorative elements */}
       <div className='absolute inset-0 overflow-hidden'>
         <div className='absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-full blur-3xl animate-pulse'></div>

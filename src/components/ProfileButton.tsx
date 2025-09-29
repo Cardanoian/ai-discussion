@@ -8,11 +8,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User as UserIcon, Sun, Moon } from 'lucide-react';
+import { LogOut, User as UserIcon } from 'lucide-react';
 import { getRankTitle } from '@/lib/constants';
 import type { UserProfile } from '@/models/Profile';
 import { useUserProfile } from '@/contexts/useUserProfile';
-import { useTheme } from '@/contexts/useTheme';
 
 interface ProfileButtonProps {
   userProfile: UserProfile;
@@ -21,7 +20,6 @@ interface ProfileButtonProps {
 
 const ProfileButton = ({ userProfile, className = '' }: ProfileButtonProps) => {
   const { handleLogout } = useUserProfile();
-  const { theme, toggleTheme } = useTheme();
   const rankInfo = getRankTitle(userProfile.rating);
 
   return (
@@ -51,20 +49,6 @@ const ProfileButton = ({ userProfile, className = '' }: ProfileButtonProps) => {
             프로필
           </DropdownMenuItem>
         </Link>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={toggleTheme} className='px-2 py-2'>
-          {theme === 'dark' ? (
-            <>
-              <Sun className='w-4 h-4 mr-2' />
-              라이트 모드
-            </>
-          ) : (
-            <>
-              <Moon className='w-4 h-4 mr-2' />
-              다크 모드
-            </>
-          )}
-        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={handleLogout}

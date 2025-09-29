@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { useProfileViewModel } from '@/viewmodels/ProfileViewModel';
 import ProfileButton from '@/components/ProfileButton';
+import ThemeToggleButton from '@/components/ThemeToggleButton';
 
 const ProfileView = () => {
   const {
@@ -105,7 +106,10 @@ const ProfileView = () => {
               내 프로필
             </h1>
           </div>
-          {userProfile && <ProfileButton userProfile={userProfile} />}
+          <div className='flex items-center gap-2'>
+            <ThemeToggleButton />
+            {userProfile && <ProfileButton userProfile={userProfile} />}
+          </div>
         </header>
 
         <main className='flex-grow animate-in fade-in-50 duration-700'>

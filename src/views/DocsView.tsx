@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react';
 import { useDocsViewModel } from '@/viewmodels/DocsViewModel';
+import ThemeToggleButton from '@/components/ThemeToggleButton';
 
 const DocsView = () => {
   const {
@@ -64,6 +65,11 @@ const DocsView = () => {
       </div>
 
       <div className='relative container mx-auto p-4 md:p-8'>
+        {/* Theme button - positioned absolutely in top right */}
+        <div className='absolute top-4 right-4 z-10'>
+          <ThemeToggleButton />
+        </div>
+
         <Card className='animate-in fade-in-50 duration-700 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-0 shadow-2xl shadow-blue-500/10'>
           <div className='absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-lg'></div>
 

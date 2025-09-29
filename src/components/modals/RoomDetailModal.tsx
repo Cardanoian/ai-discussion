@@ -166,7 +166,11 @@ const RoomDetailModal = ({
                   <h4 className='font-semibold text-muted-foreground text-sm'>
                     역할 선택
                   </h4>
-                  <div className='grid grid-cols-3 gap-2'>
+                  <div
+                    className={`grid ${
+                      user?.is_admin ? 'grid-cols-3' : 'grid-cols-2'
+                    } gap-2`}
+                  >
                     <Button
                       variant='outline'
                       disabled={isSelectingRole}
