@@ -588,7 +588,14 @@ export const useDiscussionViewModel = () => {
           setBattleEnded(roomState.battleEnded);
           setStageDescription(roomState.stageDescription);
           setTimerState(roomState.timerState);
-          setTimerInfo(roomState.timerInfo);
+          // timerInfo가 undefined인 경우 기본값 사용
+          setTimerInfo(
+            roomState.timerInfo || {
+              myPenaltyPoints: 0,
+              opponentPenaltyPoints: 0,
+              maxPenaltyPoints: 18,
+            }
+          );
           setPlayers(roomState.players);
 
           // 현재 사용자의 역할과 입장 설정
@@ -624,7 +631,14 @@ export const useDiscussionViewModel = () => {
     initializeDiscussion();
 
     return () => {
-      if (socket) {
+      if (socket && stateRoomId && userId) {
+        // 방을 명시적으로 나가기
+        socket.emit('leave_room', {
+          roomId: stateRoomId,
+          userId: userId,
+        });
+
+        // 소켓 연결 해제
         socket.disconnect();
       }
       // 서버 주도 타이머 시스템으로 변경 - 클라이언트 타이머 정리 불필요
@@ -727,7 +741,7 @@ export const useDiscussionViewModel = () => {
 
     try {
       // 현재 사용자의 입장 파악 (찬성/반대)
-      const userPosition = getUserPosition();
+      // const userPosition = getUserPosition();
       if (!userPosition) {
         printDev.error('사용자 입장을 파악할 수 없습니다.');
         return null;
@@ -778,36 +792,6 @@ export const useDiscussionViewModel = () => {
       setIsRequestingAiHelp(false);
     }
   };
-
-  /**
-   * 현재 사용자의 입장(찬성/반대)을 파악하는 함수
-   */
-  const getUserPosition = (): 'agree' | 'disagree' | null => {
-    // 현재 턴 정보를 통해 사용자 입장 파악
-    if (isMyTurn) {
-      // 시스템 메시지에서 현재 사용자의 입장 정보 추출
-      const systemMessages = messages.filter((msg) => msg.sender === 'system');
-      const lastTurnMessage = systemMessages
-        .filter((msg) => msg.text.includes('님의') && msg.text.includes('차례'))
-        .slice(-1)[0];
-
-      if (lastTurnMessage) {
-        if (lastTurnMessage.text.includes('찬성측')) {
-          return 'agree';
-        } else if (lastTurnMessage.text.includes('반대측')) {
-          return 'disagree';
-        }
-      }
-    }
-
-    // AI 심판 메시지에서 사용자 입장 추출 (초기 메시지 분석)
-    // 현재 구조상 사용자 이름을 직접 비교하기 어려우므로
-    // 턴 정보를 우선적으로 활용
-
-    // 기본값으로 찬성 반환 (추후 개선 필요)
-    return 'agree';
-  };
-
   /**
    * 현재 토론 주제 정보를 가져오는 함수
    */

@@ -40,8 +40,14 @@ const DiscussionView = () => {
     const disagreePlayer = players.find((p) => p.position === 'disagree');
 
     return {
-      agree: agreePlayer?.displayName || userProfile?.display_name || '찬성측',
-      disagree: disagreePlayer?.displayName || '반대측',
+      agree:
+        agreePlayer?.userId === userId
+          ? userProfile?.display_name || agreePlayer?.displayName || '찬성측'
+          : agreePlayer?.displayName || '찬성측',
+      disagree:
+        disagreePlayer?.userId === userId
+          ? userProfile?.display_name || disagreePlayer?.displayName || '반대측'
+          : disagreePlayer?.displayName || '반대측',
     };
   };
 

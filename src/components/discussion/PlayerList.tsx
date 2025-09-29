@@ -2,6 +2,7 @@ import React from 'react';
 import { Crown, Eye, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
+import { useUserProfile } from '@/contexts/useUserProfile';
 import type { Player } from './types';
 
 interface PlayerListProps {
@@ -10,6 +11,7 @@ interface PlayerListProps {
 }
 
 const PlayerList: React.FC<PlayerListProps> = ({ players, currentUserId }) => {
+  const { userProfile } = useUserProfile();
   const sortedPlayers = [...players].sort((a, b) => {
     if (a.role === 'referee' && b.role !== 'referee') return -1;
     if (a.role !== 'referee' && b.role === 'referee') return 1;
@@ -50,7 +52,12 @@ const PlayerList: React.FC<PlayerListProps> = ({ players, currentUserId }) => {
                   'text-blue-700 dark:text-blue-300'
               )}
             >
-              {player.displayName || `사용자 ${player.userId.substring(0, 4)}`}
+              {player.userId === currentUserId
+                ? userProfile?.display_name ||
+                  player.displayName ||
+                  `사용자 ${player.userId.substring(0, 4)}`
+                : player.displayName ||
+                  `사용자 ${player.userId.substring(0, 4)}`}
             </span>
             <span
               className={cn(

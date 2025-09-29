@@ -75,35 +75,36 @@ const DiscussionHeader = ({
             <div
               className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                timerInfo.myPenaltyPoints >= 15
+                (timerInfo?.myPenaltyPoints ?? 0) >= 15
                   ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                  : timerInfo.myPenaltyPoints >= 12
+                  : (timerInfo?.myPenaltyPoints ?? 0) >= 12
                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                  : timerInfo.myPenaltyPoints > 0
+                  : (timerInfo?.myPenaltyPoints ?? 0) > 0
                   ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                   : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
               )}
             >
               <AlertTriangle className='w-3 h-3' />
-              내: {timerInfo.myPenaltyPoints}/{timerInfo.maxPenaltyPoints}
+              내: {timerInfo?.myPenaltyPoints ?? 0}/
+              {timerInfo?.maxPenaltyPoints ?? 18}
             </div>
 
             {/* 상대방 감점 */}
             <div
               className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium',
-                timerInfo.opponentPenaltyPoints >= 15
+                (timerInfo?.opponentPenaltyPoints ?? 0) >= 15
                   ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                  : timerInfo.opponentPenaltyPoints >= 12
+                  : (timerInfo?.opponentPenaltyPoints ?? 0) >= 12
                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                  : timerInfo.opponentPenaltyPoints > 0
+                  : (timerInfo?.opponentPenaltyPoints ?? 0) > 0
                   ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                   : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
               )}
             >
               <AlertTriangle className='w-3 h-3' />
-              상대: {timerInfo.opponentPenaltyPoints}/
-              {timerInfo.maxPenaltyPoints}
+              상대: {timerInfo?.opponentPenaltyPoints ?? 0}/
+              {timerInfo?.maxPenaltyPoints ?? 18}
             </div>
           </div>
         </div>
