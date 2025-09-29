@@ -1,10 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
-import {
-  generateArguments,
-  generateQuestionsAndAnswers,
-} from '@/lib/apiClient';
+import { generateArgument, generateQuestionAndAnswer } from '@/lib/apiClient';
 import type { User } from '@supabase/supabase-js';
 import type { Subject, Question } from '@/models/Docs';
 import printDev from '@/utils/printDev';
@@ -21,8 +18,7 @@ export const useDocsViewModel = () => {
   const [position, setPosition] = useState<'favor' | 'against'>('favor');
   const [reasons, setReasons] = useState<string[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [isGeneratingArguments, setIsGeneratingArguments] = useState(false);
-  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // 사용자 정보 가져오기
   useEffect(() => {
@@ -205,28 +201,23 @@ export const useDocsViewModel = () => {
       return;
     }
 
-    setIsGeneratingArguments(true);
+    setIsGenerating(true);
     try {
-      const generatedArguments = await generateArguments(
+      const generatedArgument = await generateArgument(
+        position === 'favor',
         selectedSubjectData.title,
-        reasons,
-        position === 'against'
+        reasons
       );
+      setReasons((prev) => [...prev, generatedArgument]);
 
-      const newReasons = [...reasons];
-      generatedArguments.forEach((arg) => {
-        newReasons.push(arg);
-      });
-      setReasons(newReasons);
-
-      alert(`AI가 ${generatedArguments.length}개의 근거를 생성했습니다!`);
+      alert(`AI가 근거를 1개 생성했습니다!`);
     } catch (error) {
       printDev.error('AI 근거 생성 오류:', error);
       alert(
         error instanceof Error ? error.message : 'AI 근거 생성에 실패했습니다.'
       );
     } finally {
-      setIsGeneratingArguments(false);
+      setIsGenerating(false);
     }
   };
 
@@ -253,21 +244,17 @@ export const useDocsViewModel = () => {
       return;
     }
 
-    setIsGeneratingQuestions(true);
+    setIsGenerating(true);
     try {
-      const generatedQA = await generateQuestionsAndAnswers(
+      const generatedQA = await generateQuestionAndAnswer(
+        position === 'favor',
         selectedSubjectData.title,
         validReasons,
         questions
       );
+      setQuestions((prev) => [...prev, generatedQA]);
 
-      const newQuestions = [...questions];
-      generatedQA.forEach((qa) => {
-        newQuestions.push(qa);
-      });
-      setQuestions(newQuestions);
-
-      alert(`AI가 ${generatedQA.length}개의 질문/답변을 생성했습니다!`);
+      alert(`AI가 질문/답변을 1개 생성했습니다!`);
     } catch (error) {
       printDev.error('AI 질문/답변 생성 오류:', error);
       alert(
@@ -276,7 +263,7 @@ export const useDocsViewModel = () => {
           : 'AI 질문/답변 생성에 실패했습니다.'
       );
     } finally {
-      setIsGeneratingQuestions(false);
+      setIsGenerating(false);
     }
   };
 
@@ -293,8 +280,7 @@ export const useDocsViewModel = () => {
     position,
     reasons,
     questions,
-    isGeneratingArguments,
-    isGeneratingQuestions,
+    isGenerating,
 
     // Setters
     setSelectedSubject,

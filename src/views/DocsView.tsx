@@ -35,8 +35,7 @@ const DocsView = () => {
     position,
     reasons,
     questions,
-    isGeneratingArguments,
-    isGeneratingQuestions,
+    isGenerating,
 
     // Setters
     setSelectedSubject,
@@ -135,11 +134,11 @@ const DocsView = () => {
                   내 근거
                   <Button
                     onClick={handleGenerateArguments}
-                    disabled={!selectedSubject || isGeneratingArguments}
+                    disabled={!selectedSubject || isGenerating}
                     variant='outline'
                     size='sm'
                   >
-                    {isGeneratingArguments ? (
+                    {isGenerating ? (
                       <Loader2 className='w-4 h-4 mr-2 animate-spin' />
                     ) : (
                       <Sparkles className='w-4 h-4 mr-2' />
@@ -184,13 +183,13 @@ const DocsView = () => {
                     onClick={handleGenerateQuestions}
                     disabled={
                       !selectedSubject ||
-                      isGeneratingQuestions ||
+                      isGenerating ||
                       reasons.filter((r) => r.trim()).length === 0
                     }
                     variant='outline'
                     size='sm'
                   >
-                    {isGeneratingQuestions ? (
+                    {isGenerating ? (
                       <Loader2 className='w-4 h-4 mr-2 animate-spin' />
                     ) : (
                       <Sparkles className='w-4 h-4 mr-2' />

@@ -1,7 +1,8 @@
 import printDev from '@/utils/printDev';
 import { supabase } from './supabaseClient';
 
-const API_BASE_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3050';
+const API_BASE_URL =
+  import.meta.env.VITE_SERVER_URL + '/server' || 'http://localhost:3050';
 
 /**
  * 인증된 API 요청을 위한 헤더를 가져오는 함수
@@ -24,23 +25,23 @@ const getAuthHeaders = async () => {
 /**
  * AI를 사용하여 토론 근거를 생성하는 함수
  */
-export const generateArguments = async (
+export const generateArgument = async (
+  agreement: boolean,
   subject: string,
-  existingReasons: string[],
-  isAgainst: boolean = false
-): Promise<string[]> => {
+  existingReasons: string[]
+): Promise<string> => {
   try {
     const headers = await getAuthHeaders();
 
     const response = await fetch(
-      `${API_BASE_URL}/api/gemini/generate-arguments`,
+      `${API_BASE_URL}/api/gemini/generate-argument`,
       {
         method: 'POST',
         headers,
         body: JSON.stringify({
           subject,
           existingReasons,
-          isAgainst,
+          agreement,
         }),
       }
     );
@@ -51,7 +52,7 @@ export const generateArguments = async (
     }
 
     const data = await response.json();
-    return data.arguments || [];
+    return data.argument || '';
   } catch (error) {
     printDev.error('AI 근거 생성 오류:', error);
     throw error instanceof Error
@@ -63,20 +64,22 @@ export const generateArguments = async (
 /**
  * AI를 사용하여 질문과 답변을 생성하는 함수
  */
-export const generateQuestionsAndAnswers = async (
+export const generateQuestionAndAnswer = async (
+  agreement: boolean,
   subject: string,
   reasons: string[],
   existingQuestions: { q: string; a: string }[]
-): Promise<{ q: string; a: string }[]> => {
+): Promise<{ q: string; a: string }> => {
   try {
     const headers = await getAuthHeaders();
 
     const response = await fetch(
-      `${API_BASE_URL}/api/gemini/generate-questions`,
+      `${API_BASE_URL}/api/gemini/generate-question`,
       {
         method: 'POST',
         headers,
         body: JSON.stringify({
+          agreement,
           subject,
           reasons,
           existingQuestions,
@@ -90,7 +93,7 @@ export const generateQuestionsAndAnswers = async (
     }
 
     const data = await response.json();
-    return data.questions || [];
+    return data || { q: '', a: '' };
   } catch (error) {
     printDev.error('AI 질문/답변 생성 오류:', error);
     throw error instanceof Error
