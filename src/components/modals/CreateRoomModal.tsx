@@ -46,7 +46,10 @@ const CreateRoomModal = ({
           방 만들기
         </Button>
       </DialogTrigger>
-      <DialogContent className='sm:max-w-[600px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20'>
+      <DialogContent
+        className='sm:max-w-[600px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20'
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className='bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600'>
             새 토론방 만들기
@@ -75,6 +78,13 @@ const CreateRoomModal = ({
           </div>
         </div>
         <DialogFooter>
+          <Button
+            type='button'
+            onClick={() => onOpenChange(false)}
+            className='bg-red-500 hover:bg-red-600 text-white border-0 mr-2'
+          >
+            취소
+          </Button>
           <Button
             type='submit'
             onClick={onCreateRoom}
