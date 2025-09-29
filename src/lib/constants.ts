@@ -4,8 +4,8 @@ export const getRankTitle = (rating: number): RankInfo => {
   if (rating >= 3000)
     return {
       title: '그랜드마스터',
-      color: 'from-red-300 to-red-500',
-      textColor: 'text-red-500 dark:text-red-300',
+      color: 'from-fuchsia-400 via-purple-500 to-indigo-600',
+      textColor: 'text-fuchsia-500 dark:text-fuchsia-400',
     };
   if (rating >= 2800)
     return {
