@@ -1,12 +1,12 @@
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -15,9 +15,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   User as UserIcon,
   Trophy,
@@ -27,10 +34,19 @@ import {
   Crown,
   Zap,
   Edit,
+<<<<<<< HEAD
 } from 'lucide-react';
 import { useProfileViewModel } from '@/viewmodels/ProfileViewModel';
 import ProfileButton from '@/components/ProfileButton';
 import ThemeToggleButton from '@/components/ThemeToggleButton';
+=======
+  RefreshCw,
+  Sparkles,
+} from "lucide-react";
+import { useProfileViewModel } from "@/viewmodels/ProfileViewModel";
+import ProfileButton from "@/components/ProfileButton";
+import { useEffect } from "react";
+>>>>>>> 4b8ae42 ((아바타)프로필 버튼 및 프로필 뷰 개선)
 
 const ProfileView = () => {
   const {
@@ -41,14 +57,26 @@ const ProfileView = () => {
     isEditNicknameOpen,
     newNickname,
     rank,
+    isGeneratingAvatar,
+    isGeneratingPreview,
+    selectedAvatarStyle,
+    selectedCustomization,
+    previewAvatarUrl,
+    avatarStyles,
+    avatarCustomizations,
 
     // Setters
     setIsEditNicknameOpen,
     setNewNickname,
+    setSelectedAvatarStyle,
+    setSelectedCustomization,
 
     // Handlers
-    handleNicknameUpdate,
+    handleProfileSave,
+    handleModalCancel,
     getDisplayName,
+    generateAvatarPreview,
+    regenerateAvatar,
   } = useProfileViewModel();
 
   // 승급까지 필요한 점수 계산
@@ -75,126 +103,321 @@ const ProfileView = () => {
 
   if (loading) {
     return (
-      <div className='flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50'>
-        <div className='animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600'></div>
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className='flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50'>
+    <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50">
       {/* Background decorative elements */}
-      <div className='absolute inset-0 overflow-hidden pointer-events-none'>
-        <div className='absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse'></div>
-        <div className='absolute bottom-20 left-20 w-64 h-64 bg-gradient-to-tr from-cyan-400/10 to-blue-600/10 rounded-full blur-3xl animate-pulse delay-1000'></div>
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 right-20 w-64 h-64 bg-gradient-to-br from-blue-400/10 to-purple-600/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-20 left-20 w-64 h-64 bg-gradient-to-tr from-cyan-400/10 to-blue-600/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
+<<<<<<< HEAD
       <div className='relative flex flex-col h-screen p-4 md:p-8'>
         <header className='flex justify-between items-center mb-12'>
           <div className='flex items-center space-x-4'>
             <Link to='/main'>
               <Button className='bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 group px-8 py-3'>
                 <ArrowLeft className='w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300' />
+=======
+      <div className="relative flex flex-col h-screen p-4 md:p-8">
+        <header className="flex justify-between items-center mb-12">
+          <div className="flex items-center space-x-4">
+            <Link to="/main">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 dark:hover:bg-slate-800/70">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+>>>>>>> 4b8ae42 ((아바타)프로필 버튼 및 프로필 뷰 개선)
                 메인으로
               </Button>
             </Link>
-            <h1 className='text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-500'>
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-500">
               내 프로필
             </h1>
           </div>
+<<<<<<< HEAD
           <div className='flex items-center gap-2'>
             <ThemeToggleButton />
             {userProfile && <ProfileButton userProfile={userProfile} />}
           </div>
+=======
+          {userProfile && (
+            <ProfileButton userProfile={userProfile} />
+          )}
+>>>>>>> 4b8ae42 ((아바타)프로필 버튼 및 프로필 뷰 개선)
         </header>
 
-        <main className='flex-grow animate-in fade-in-50 duration-700'>
+        <main className="flex-grow animate-in fade-in-50 duration-700">
           {/* User Info Card */}
-          <div className='mb-8'>
-            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500'>
-              <div className='absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
+          <div className="mb-8">
+            <Card className="group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-              <CardHeader className='relative pb-4'>
-                <div className='flex items-center space-x-6'>
-                  <div className='relative group'>
+              <CardHeader className="relative pb-4">
+                <div className="flex items-center space-x-6">
+                  <div className="relative group">
                     <div
-                      className={`absolute inset-0 bg-gradient-to-r ${rank.color} rounded-full blur-lg opacity-30 animate-pulse`}
-                    ></div>
-                    <div
-                      className={`relative w-24 h-24 bg-gradient-to-r ${rank.color} rounded-full flex items-center justify-center shadow-lg`}
-                    >
-                      <UserIcon className='w-12 h-12 text-white' />
-                    </div>
+                      className={`absolute inset-0 bg-gradient-to-r ${rank.color} rounded-full blur-lg opacity-30 animate-pulse`}></div>
+                    {userProfile?.avatar_url ? (
+                      <img
+                        src={userProfile.avatar_url}
+                        alt="Avatar"
+                        className="relative w-24 h-24 rounded-full shadow-lg object-cover border-2 border-white/20"
+                      />
+                    ) : (
+                      <div
+                        className={`relative w-24 h-24 bg-gradient-to-r ${rank.color} rounded-full flex items-center justify-center shadow-lg`}>
+                        <UserIcon className="w-12 h-12 text-white" />
+                      </div>
+                    )}
                   </div>
 
-                  <div className='flex-1'>
-                    <div className='flex items-center space-x-2 mb-2'>
-                      <CardTitle className='text-2xl'>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <CardTitle className="text-2xl">
                         {getDisplayName()}
                       </CardTitle>
                       <Dialog
                         open={isEditNicknameOpen}
-                        onOpenChange={setIsEditNicknameOpen}
-                      >
+                        onOpenChange={
+                          setIsEditNicknameOpen
+                        }>
                         <DialogTrigger asChild>
                           <Button
-                            variant='ghost'
-                            size='sm'
-                            className='p-1 h-auto hover:bg-white/20 dark:hover:bg-slate-800/20'
+                            variant="ghost"
+                            size="sm"
+                            className="p-1 h-auto hover:bg-white/20 dark:hover:bg-slate-800/20"
                             onClick={() =>
-                              setNewNickname(userProfile?.display_name || '')
-                            }
-                          >
-                            <Edit className='w-4 h-4 text-muted-foreground hover:text-foreground' />
+                              setNewNickname(
+                                userProfile?.display_name ||
+                                  ""
+                              )
+                            }>
+                            <Edit className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className='sm:max-w-[425px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20'>
+                        <DialogContent className="sm:max-w-[640px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20">
                           <DialogHeader>
-                            <DialogTitle className='bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600'>
-                              표시명 편집
+                            <DialogTitle className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+                              프로필 편집
                             </DialogTitle>
                             <DialogDescription>
-                              표시될 이름을 입력하세요. 비워두면 기본 이름이
-                              표시됩니다.
+                              프로필 이름과 AI 아바타를
+                              설정할 수 있습니다.
                             </DialogDescription>
                           </DialogHeader>
-                          <div className='grid gap-4 py-4'>
-                            <div className='grid grid-cols-4 items-center gap-4'>
+                          <div className="grid gap-6 py-4">
+                            {/* 닉네임 입력 */}
+                            <div className="grid grid-cols-4 items-center gap-4">
                               <Label
-                                htmlFor='displayname'
-                                className='text-right'
-                              >
+                                htmlFor="displayname"
+                                className="text-right">
                                 표시명
                               </Label>
                               <Input
-                                id='displayname'
+                                id="displayname"
                                 value={newNickname}
-                                onChange={(e) => setNewNickname(e.target.value)}
-                                className='col-span-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20'
-                                placeholder='표시명을 입력하세요'
+                                onChange={(e) =>
+                                  setNewNickname(
+                                    e.target.value
+                                  )
+                                }
+                                className="col-span-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20"
+                                placeholder="표시명을 입력하세요"
                                 maxLength={20}
                               />
                             </div>
+
+                            {/* 구분선 */}
+                            <div className="relative">
+                              <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-gray-300 dark:border-gray-700" />
+                              </div>
+                              <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-white dark:bg-slate-900 px-2 text-gray-500 dark:text-gray-400">
+                                  AI 아바타 생성
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* 아바타 스타일 선택 */}
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label className="text-right">
+                                스타일
+                              </Label>
+                              <Select
+                                value={selectedAvatarStyle}
+                                onValueChange={(
+                                  value: any
+                                ) => {
+                                  setSelectedAvatarStyle(
+                                    value
+                                  );
+                                }}>
+                                <SelectTrigger className="col-span-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20">
+                                  <SelectValue placeholder="아바타 스타일 선택" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60">
+                                  {avatarStyles.map(
+                                    (style) => (
+                                      <SelectItem
+                                        key={style.id}
+                                        value={style.id}>
+                                        <span className="flex flex-col items-start">
+                                          <span className="font-medium">
+                                            {style.name}
+                                          </span>
+                                          <span className="text-xs text-muted-foreground">
+                                            {
+                                              style.description
+                                            }
+                                          </span>
+                                        </span>
+                                      </SelectItem>
+                                    )
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* 커스터마이징 선택 */}
+                            <div className="grid grid-cols-4 items-center gap-4">
+                              <Label className="text-right">
+                                동물
+                              </Label>
+                              <Select
+                                value={
+                                  selectedCustomization
+                                }
+                                onValueChange={(
+                                  value: any
+                                ) => {
+                                  setSelectedCustomization(
+                                    value
+                                  );
+                                }}>
+                                <SelectTrigger className="col-span-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20">
+                                  <SelectValue placeholder="동물 캐릭터 선택" />
+                                </SelectTrigger>
+                                <SelectContent className="max-h-60">
+                                  {avatarCustomizations.map(
+                                    (custom) => (
+                                      <SelectItem
+                                        key={custom.id}
+                                        value={custom.id}>
+                                        {custom.name}
+                                      </SelectItem>
+                                    )
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {/* 생성 버튼 */}
+                            <div className="flex justify-center">
+                              <Button
+                                type="button"
+                                onClick={
+                                  generateAvatarPreview
+                                }
+                                disabled={
+                                  isGeneratingPreview
+                                }
+                                variant="outline"
+                                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white border-0 hover:from-purple-700 hover:to-pink-700">
+                                {isGeneratingPreview ? (
+                                  <>
+                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                    생성 중...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Sparkles className="w-4 h-4 mr-2" />
+                                    아바타 미리보기 생성
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+
+                            {/* 아바타 미리보기 */}
+                            {previewAvatarUrl && (
+                              <div className="flex flex-col items-center gap-4">
+                                <div className="relative group">
+                                  <img
+                                    src={previewAvatarUrl}
+                                    alt="Avatar Preview"
+                                    className="w-32 h-32 rounded-full shadow-lg border-2 border-gray-200 dark:border-gray-700"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={
+                                      regenerateAvatar
+                                    }
+                                    disabled={
+                                      isGeneratingPreview
+                                    }
+                                    className="absolute -bottom-2 -right-2 bg-white dark:bg-slate-800 rounded-full p-2 shadow-lg hover:scale-110 transition-transform">
+                                    <RefreshCw
+                                      className={`w-4 h-4 ${
+                                        isGeneratingPreview
+                                          ? "animate-spin"
+                                          : ""
+                                      }`}
+                                    />
+                                  </Button>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  <RefreshCw className="inline w-3 h-3 mr-1" />
+                                  버튼을 눌러 다시
+                                  생성하거나 스타일/동물을
+                                  바꾸고 생성하세요
+                                </p>
+                              </div>
+                            )}
                           </div>
-                          <DialogFooter>
+                          <DialogFooter className="gap-2">
                             <Button
-                              type='submit'
-                              onClick={handleNicknameUpdate}
-                              className='bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0'
-                            >
-                              저장
+                              type="button"
+                              variant="outline"
+                              onClick={handleModalCancel}>
+                              취소
+                            </Button>
+                            <Button
+                              type="submit"
+                              onClick={handleProfileSave}
+                              disabled={isGeneratingAvatar}
+                              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0">
+                              {isGeneratingAvatar ? (
+                                <>
+                                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                  저장 중...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-4 h-4 mr-2" />
+                                  설정 저장
+                                </>
+                              )}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
                     </div>
-                    <div className='flex items-center space-x-2'>
+                    <div className="flex items-center space-x-2">
                       <Crown
                         className={`w-5 h-5 bg-gradient-to-r ${rank.color} bg-clip-text text-transparent`}
                       />
                       <span
-                        className={`text-lg font-semibold bg-gradient-to-r ${rank.color} bg-clip-text text-transparent`}
-                      >
+                        className={`text-lg font-semibold bg-gradient-to-r ${rank.color} bg-clip-text text-transparent`}>
                         {rank.title}
                       </span>
                     </div>
@@ -205,18 +428,19 @@ const ProfileView = () => {
           </div>
 
           {/* Stats Grid */}
-          <div className='grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8'>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {/* ELO Rating */}
-            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-yellow-500/10 hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
-              <div className='absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
-              <CardHeader className='relative text-center'>
-                <div className='flex justify-center mb-2'>
-                  <div className='relative'>
-                    <div className='absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
-                    <Trophy className='relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500' />
+            <Card className="group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-yellow-500/10 hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-500 transform hover:scale-[1.02]">
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardHeader className="relative text-center">
+                <div className="flex justify-center mb-2">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+                    <Trophy className="relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-500" />
                   </div>
                 </div>
-                <CardTitle className={`text-3xl font-bold ${rank.textColor}`}>
+                <CardTitle
+                  className={`text-3xl font-bold ${rank.textColor}`}>
                   {Math.floor(userStats.rating)}
                 </CardTitle>
                 <CardDescription>레이팅</CardDescription>
@@ -224,16 +448,16 @@ const ProfileView = () => {
             </Card>
 
             {/* Total Games */}
-            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
-              <div className='absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
-              <CardHeader className='relative text-center'>
-                <div className='flex justify-center mb-2'>
-                  <div className='relative'>
-                    <div className='absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
-                    <TrendingUp className='relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500' />
+            <Card className="group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 transform hover:scale-[1.02]">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardHeader className="relative text-center">
+                <div className="flex justify-center mb-2">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+                    <TrendingUp className="relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-cyan-500" />
                   </div>
                 </div>
-                <CardTitle className='text-3xl font-bold text-blue-600 dark:text-blue-400'>
+                <CardTitle className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                   {userStats.total_games}
                 </CardTitle>
                 <CardDescription>전체 게임</CardDescription>
@@ -241,16 +465,16 @@ const ProfileView = () => {
             </Card>
 
             {/* Points to Promotion */}
-            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
-              <div className='absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
-              <CardHeader className='relative text-center'>
-                <div className='flex justify-center mb-2'>
-                  <div className='relative'>
-                    <div className='absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
-                    <TrendingUp className='relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500' />
+            <Card className="group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-emerald-500/10 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-500 transform hover:scale-[1.02]">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-teal-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardHeader className="relative text-center">
+                <div className="flex justify-center mb-2">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+                    <TrendingUp className="relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-500" />
                   </div>
                 </div>
-                <CardTitle className='text-3xl font-bold text-emerald-600 dark:text-emerald-400'>
+                <CardTitle className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
                   {getPointsToPromotion(userStats.rating)}
                 </CardTitle>
                 <CardDescription>승급까지</CardDescription>
@@ -258,16 +482,16 @@ const ProfileView = () => {
             </Card>
 
             {/* Points to Demotion */}
-            <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-orange-500/10 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-500 transform hover:scale-[1.02]'>
-              <div className='absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
-              <CardHeader className='relative text-center'>
-                <div className='flex justify-center mb-2'>
-                  <div className='relative'>
-                    <div className='absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
-                    <Target className='relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500' />
+            <Card className="group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-orange-500/10 hover:shadow-2xl hover:shadow-orange-500/20 transition-all duration-500 transform hover:scale-[1.02]">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <CardHeader className="relative text-center">
+                <div className="flex justify-center mb-2">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+                    <Target className="relative w-8 h-8 text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500" />
                   </div>
                 </div>
-                <CardTitle className='text-3xl font-bold text-orange-600 dark:text-orange-400'>
+                <CardTitle className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                   {getPointsToDemotion(userStats.rating)}
                 </CardTitle>
                 <CardDescription>강등까지</CardDescription>
@@ -276,37 +500,43 @@ const ProfileView = () => {
           </div>
 
           {/* Game Results */}
-          <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500'>
-            <div className='absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
+          <Card className="group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-purple-500/10 hover:shadow-2xl hover:shadow-purple-500/20 transition-all duration-500">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
 
-            <CardHeader className='relative'>
-              <CardTitle className='flex items-center text-xl'>
-                <div className='relative mr-3'>
-                  <div className='absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300'></div>
-                  <Zap className='relative w-6 h-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-500' />
+            <CardHeader className="relative">
+              <CardTitle className="flex items-center text-xl">
+                <div className="relative mr-3">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg blur-sm opacity-30 group-hover:opacity-50 transition-opacity duration-300"></div>
+                  <Zap className="relative w-6 h-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-500" />
                 </div>
                 게임 결과
               </CardTitle>
             </CardHeader>
-            <CardContent className='relative'>
-              <div className='grid md:grid-cols-3 gap-6'>
-                <div className='text-center'>
-                  <div className='text-2xl font-bold text-green-600 dark:text-green-400 mb-1'>
+            <CardContent className="relative">
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">
                     {userStats.wins}
                   </div>
-                  <div className='text-sm text-muted-foreground'>승리</div>
+                  <div className="text-sm text-muted-foreground">
+                    승리
+                  </div>
                 </div>
-                <div className='text-center'>
-                  <div className='text-2xl font-bold text-red-600 dark:text-red-400 mb-1'>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400 mb-1">
                     {userStats.loses}
                   </div>
-                  <div className='text-sm text-muted-foreground'>패배</div>
+                  <div className="text-sm text-muted-foreground">
+                    패배
+                  </div>
                 </div>
-                <div className='text-center'>
-                  <div className='text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1'>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-1">
                     {userStats.win_rate.toFixed(1)}%
                   </div>
-                  <div className='text-sm text-muted-foreground'>승률</div>
+                  <div className="text-sm text-muted-foreground">
+                    승률
+                  </div>
                 </div>
               </div>
             </CardContent>

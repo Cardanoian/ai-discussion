@@ -9,6 +9,7 @@ export interface UserStats {
 export interface UserProfile {
   user_uuid: string;
   display_name: string;
+  avatar_url: string | null;
   rating: number;
   wins: number;
   loses: number;
