@@ -96,6 +96,22 @@ server {
         proxy_read_timeout 86400;
     }
 
+    location /server/socket.io/ {
+        proxy_pass http://localhost:3050/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+        proxy_buffering off;
+    }
+
     # 정적 파일 캐싱
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1m;
