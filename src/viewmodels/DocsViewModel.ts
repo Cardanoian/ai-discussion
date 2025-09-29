@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { generateArgument, generateQuestionAndAnswer } from '@/lib/apiClient';
+import { useUserProfile } from '@/contexts/useUserProfile';
 import type { User } from '@supabase/supabase-js';
 import type { Subject, Question } from '@/models/Docs';
 import printDev from '@/utils/printDev';
@@ -12,6 +13,7 @@ import printDev from '@/utils/printDev';
  */
 export const useDocsViewModel = () => {
   const navigate = useNavigate();
+  const { userProfile } = useUserProfile();
   const [user, setUser] = useState<User | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string>('');
@@ -275,6 +277,7 @@ export const useDocsViewModel = () => {
   return {
     // State
     user,
+    userProfile,
     subjects,
     selectedSubject,
     position,

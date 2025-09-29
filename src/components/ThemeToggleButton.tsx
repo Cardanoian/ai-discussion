@@ -13,17 +13,21 @@ const ThemeToggleButton = ({ className = '' }: ThemeToggleButtonProps) => {
     <Button
       variant='ghost'
       onClick={toggleTheme}
-      className={`flex items-center space-x-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-white/30 dark:border-slate-700/50 hover:bg-white/95 dark:hover:bg-slate-700/90 hover:border-blue-300/50 dark:hover:border-blue-500/50 hover:scale-105 transform transition-all duration-300 px-4 py-2 hover:shadow-xl hover:shadow-blue-500/30 ${className}`}
+      className={`group flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 px-4 py-2 hover:scale-105 transform ${className}`}
     >
       {theme === 'dark' ? (
         <>
-          <Sun className='w-4 h-4' />
-          <span className='ml-2 hidden md:inline'>라이트</span>
+          <Sun className='w-4 h-4 group-hover:scale-110 transition-transform duration-300 text-white' />
+          <span className='ml-2 hidden md:inline font-medium text-white group-hover:text-white/90 transition-colors duration-300'>
+            라이트
+          </span>
         </>
       ) : (
         <>
-          <Moon className='w-4 h-4' />
-          <span className='ml-2 hidden md:inline'>다크</span>
+          <Moon className='w-4 h-4 group-hover:scale-110 transition-transform duration-300 text-white' />
+          <span className='ml-2 hidden md:inline font-medium text-white group-hover:text-white/90 transition-colors duration-300'>
+            다크
+          </span>
         </>
       )}
       <span className='sr-only'>테마 변경</span>
