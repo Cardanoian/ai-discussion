@@ -81,7 +81,7 @@ const CreateRoomModal = ({
           <Button
             type='button'
             onClick={() => onOpenChange(false)}
-            className='bg-red-500 hover:bg-red-600 text-white border-0 mr-2'
+            className='bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 mr-2'
           >
             취소
           </Button>

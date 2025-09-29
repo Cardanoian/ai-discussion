@@ -93,12 +93,8 @@ const ProfileView = () => {
         <header className='flex justify-between items-center mb-12'>
           <div className='flex items-center space-x-4'>
             <Link to='/main'>
-              <Button
-                variant='ghost'
-                size='sm'
-                className='bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 dark:hover:bg-slate-800/70'
-              >
-                <ArrowLeft className='w-4 h-4 mr-2' />
+              <Button className='bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 group px-8 py-3'>
+                <ArrowLeft className='w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300' />
                 메인으로
               </Button>
             </Link>

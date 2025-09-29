@@ -386,10 +386,10 @@ const RoomDetailModal = ({
         <DialogFooter className='flex flex-col sm:flex-row gap-3 flex-shrink-0'>
           <Button
             onClick={onLeaveRoom}
-            variant='outline'
-            className='bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20'
+            className='bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 group'
           >
-            <X className='w-4 h-4 mr-2' />방 나가기
+            <X className='w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300' />
+            방 나가기
           </Button>
           <Button
             onClick={onReady}
