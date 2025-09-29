@@ -72,6 +72,7 @@ export const useDiscussionViewModel = () => {
     aiScore?: { agree: number; disagree: number };
   } | null>(null);
   const [isBattleResultModalOpen, setIsBattleResultModalOpen] = useState(false);
+  const [isLoadingRoomState, setIsLoadingRoomState] = useState(true);
   const [timerInfo, setTimerInfo] = useState<{
     myPenaltyPoints: number;
     opponentPenaltyPoints: number;
@@ -183,13 +184,43 @@ export const useDiscussionViewModel = () => {
 
     setRoomId(stateRoomId);
 
-    // 새로운 토론 시작 시 메시지 초기화
-    setMessages([]);
-    setBattleEnded(false);
-    setCurrentTurn('');
-    setIsMyTurn(false);
-    setCurrentStage(0);
-    setStageDescription('');
+    // 새로고침 여부 확인 (최신 Navigation API 사용)
+    const isPageRefresh = (() => {
+      try {
+        if (typeof performance !== 'undefined') {
+          const navigationEntries = performance.getEntriesByType(
+            'navigation'
+          ) as PerformanceNavigationTiming[];
+          if (navigationEntries.length > 0) {
+            return navigationEntries[0].type === 'reload';
+          }
+
+          // 폴백: 페이지 로드 타입으로 판단 (완전히 새로운 로드가 아닌 경우)
+          const entries = performance.getEntriesByType(
+            'navigation'
+          ) as PerformanceNavigationTiming[];
+          return entries.length > 0 && entries[0].type === 'reload';
+        }
+        return false;
+      } catch (error) {
+        // API를 지원하지 않는 브라우저에서는 false 반환
+        printDev.error(error);
+        return false;
+      }
+    })();
+
+    // 새로고침이 아닌 경우에만 메시지 초기화
+    if (!isPageRefresh) {
+      printDev.log('새로운 토론 시작 - 상태 초기화');
+      setMessages([]);
+      setBattleEnded(false);
+      setCurrentTurn('');
+      setIsMyTurn(false);
+      setCurrentStage(0);
+      setStageDescription('');
+    } else {
+      printDev.log('페이지 새로고침 감지 - 서버에서 상태 복원 예정');
+    }
 
     // Get user authentication info and initialize socket
     const initializeDiscussion = async () => {
@@ -289,9 +320,12 @@ export const useDiscussionViewModel = () => {
           userId: currentUserId,
         });
 
-        // 서버에서 메시지 목록 요청
-        printDev.log('서버에서 메시지 목록 요청');
-        newSocket.emit('get_messages', { roomId: stateRoomId });
+        // 서버에서 전체 방 상태 요청 (메시지, 턴, 타이머 등 모든 정보)
+        printDev.log('서버에서 전체 방 상태 요청');
+        newSocket.emit('get_room_state', {
+          roomId: stateRoomId,
+          userId: currentUserId,
+        });
       });
 
       newSocket.on('disconnect', () => {
@@ -505,6 +539,84 @@ export const useDiscussionViewModel = () => {
             roundTimeLimit: data.roundTimeLimit,
             totalTimeLimit: data.totalTimeLimit,
           });
+        }
+      );
+
+      // Listen for room state updates (새로고침 시 전체 상태 동기화용)
+      newSocket.on(
+        'room_state_updated',
+        (roomState: {
+          messages: ServerMessage[];
+          stage: number;
+          currentTurn: string;
+          isMyTurn: boolean;
+          battleEnded: boolean;
+          timerState: {
+            roundTimeRemaining: number;
+            totalTimeRemaining: number;
+            isRunning: boolean;
+            isOvertime: boolean;
+            overtimeRemaining: number;
+            roundTimeLimit: number;
+            totalTimeLimit: number;
+          };
+          stageDescription: string;
+          players: Array<{
+            userId: string;
+            role: 'player' | 'spectator' | 'referee';
+            position?: 'agree' | 'disagree';
+            displayName?: string;
+          }>;
+          timerInfo: {
+            myPenaltyPoints: number;
+            opponentPenaltyPoints: number;
+            maxPenaltyPoints: number;
+          };
+        }) => {
+          printDev.log(`받은 room_state_updated: ${JSON.stringify(roomState)}`);
+
+          // 서버 상태로 모든 클라이언트 상태 동기화
+          const clientMessages: Message[] = roomState.messages.map((msg) => ({
+            sender: msg.sender,
+            text: msg.text,
+          }));
+
+          setMessages(clientMessages);
+          setCurrentStage(roomState.stage);
+          setCurrentTurn(roomState.currentTurn);
+          setIsMyTurn(roomState.isMyTurn);
+          setBattleEnded(roomState.battleEnded);
+          setStageDescription(roomState.stageDescription);
+          setTimerState(roomState.timerState);
+          setTimerInfo(roomState.timerInfo);
+          setPlayers(roomState.players);
+
+          // 현재 사용자의 역할과 입장 설정
+          const currentUserPlayer = roomState.players.find(
+            (p) => p.userId === currentUserId
+          );
+          if (currentUserPlayer) {
+            // 사용자 역할 설정 - 관리자가 아닌 경우에만 역할 변경
+            if (!userProfile?.is_admin) {
+              const newRole = currentUserPlayer.role as
+                | 'player'
+                | 'spectator'
+                | 'referee';
+              setUserRole(newRole);
+            }
+
+            // 사용자 입장 설정 (agree/disagree)
+            if (currentUserPlayer.position) {
+              const position =
+                currentUserPlayer.position === 'agree' ? 'agree' : 'disagree';
+              setUserPosition(position);
+            }
+          }
+
+          // 로딩 상태 완료
+          setIsLoadingRoomState(false);
+
+          printDev.log('방 상태 동기화 완료');
         }
       );
     };
@@ -785,6 +897,7 @@ export const useDiscussionViewModel = () => {
     stageDescription,
     userDocs,
     isLoadingDocs,
+    isLoadingRoomState, // 방 상태 로딩 상태
     timerInfo,
     timerState,
     formatTime,
