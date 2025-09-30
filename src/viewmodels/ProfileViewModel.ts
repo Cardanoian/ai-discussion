@@ -170,6 +170,32 @@ export const useProfileViewModel = () => {
 
   const rank = getRankTitle(userStats.rating);
 
+  // 승급까지 필요한 점수 계산
+  const getPointsToPromotion = (rating: number): number => {
+    let points: number;
+    if (rating >= 3000) points = 0; // 이미 최고 등급
+    else if (rating >= 2800) points = 3000 - rating;
+    else if (rating >= 2500) points = 2800 - rating;
+    else if (rating >= 2200) points = 2500 - rating;
+    else if (rating >= 1800) points = 2200 - rating;
+    else if (rating >= 1600) points = 1800 - rating;
+    else points = 1600 - rating; // 브론즈에서 실버로
+    return Math.ceil(points);
+  };
+
+  // 강등까지 남은 점수 계산
+  const getPointsToDemotion = (rating: number): number => {
+    let points: number;
+    if (rating >= 3000) points = rating - 3000;
+    else if (rating >= 2800) points = rating - 2800;
+    else if (rating >= 2500) points = rating - 2500;
+    else if (rating >= 2200) points = rating - 2200;
+    else if (rating >= 1800) points = rating - 1800;
+    else if (rating >= 1600) points = rating - 1600;
+    else points = 0; // 브론즈는 0까지
+    return Math.ceil(points);
+  };
+
   return {
     // State
     userProfile,
@@ -184,6 +210,10 @@ export const useProfileViewModel = () => {
     selectedCustomization,
     previewAvatarUrl,
     avatarCustomizations,
+
+    // Getters
+    getPointsToPromotion,
+    getPointsToDemotion,
 
     // Setters
     setIsEditNicknameOpen,

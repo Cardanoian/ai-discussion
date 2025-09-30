@@ -91,7 +91,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
 
       // 소켓 연결 생성
       const socket = io(serverUrl, {
-        path: '/server/socket.io',
+        path: '/socket.io',
       });
 
       // 소켓 연결 완료 후 사용자 프로필 요청

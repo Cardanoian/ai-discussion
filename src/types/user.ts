@@ -1,13 +1,4 @@
-export interface UserProfile {
-  user_uuid: string;
-  display_name: string;
-  rating: number;
-  wins: number;
-  loses: number;
-  created_at: string;
-  updated_at: string;
-  is_admin: boolean;
-}
+import type { UserProfile } from '@/models/Profile';
 
 export interface UserStats {
   rating: number;
