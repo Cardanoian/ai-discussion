@@ -3,7 +3,6 @@ import { MessageCircle, Send, Bot, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useNavigate } from 'react-router-dom';
 import MessageRenderer from './MessageRenderer';
 import type { PlayerViewProps } from './types';
 
@@ -17,8 +16,8 @@ const PlayerView = ({
   isRequestingAiHelp,
   userRole,
   userPosition,
+  leaveRoomAndNavigate,
 }: PlayerViewProps) => {
-  const navigate = useNavigate();
   const [inputMessage, setInputMessage] = useState('');
 
   const handleSendMessage = () => {
@@ -136,7 +135,7 @@ const PlayerView = ({
                 수고하셨습니다! 결과를 확인하신 후 메인으로 돌아가세요.
               </p>
               <Button
-                onClick={() => navigate('/waiting-room')}
+                onClick={leaveRoomAndNavigate}
                 className='bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 px-8 py-3 text-lg font-medium'
               >
                 메인으로 돌아가기

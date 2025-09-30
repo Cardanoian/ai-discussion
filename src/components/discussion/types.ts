@@ -34,6 +34,7 @@ export interface PlayerViewProps extends BaseDiscussionProps {
   requestAiHelp?: () => Promise<string | null>;
   isRequestingAiHelp: boolean;
   userPosition: 'agree' | 'disagree' | null;
+  leaveRoomAndNavigate: () => void;
 }
 
 export interface RefereeViewProps extends BaseDiscussionProps {

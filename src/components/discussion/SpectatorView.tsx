@@ -1,17 +1,19 @@
 import { MessageCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 import MessageRenderer from './MessageRenderer';
 import type { BaseDiscussionProps } from './types';
+
+interface SpectatorViewProps extends BaseDiscussionProps {
+  leaveRoomAndNavigate: () => void;
+}
 
 const SpectatorView = ({
   messages,
   scrollAreaRef,
   userRole,
-}: BaseDiscussionProps) => {
-  const navigate = useNavigate();
-
+  leaveRoomAndNavigate,
+}: SpectatorViewProps) => {
   return (
     <div className='flex-1 flex flex-col overflow-hidden'>
       <div
@@ -50,7 +52,7 @@ const SpectatorView = ({
             관전자 모드로 토론을 시청 중입니다
           </p>
           <Button
-            onClick={() => navigate('/waiting-room')}
+            onClick={leaveRoomAndNavigate}
             className='bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0'
           >
             메인으로 돌아가기

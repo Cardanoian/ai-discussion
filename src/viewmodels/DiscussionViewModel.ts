@@ -14,7 +14,9 @@ interface ServerMessage {
   timestamp?: number;
 }
 
-const serverUrl = import.meta.env.VITE_SERVER_URL;
+const serverUrl = import.meta.env.DEV
+  ? import.meta.env.VITE_TEST_SERVER_URL
+  : import.meta.env.VITE_SERVER_URL;
 
 /**
  * 토론 화면의 상태와 로직을 관리하는 ViewModel 훅
@@ -249,7 +251,7 @@ export const useDiscussionViewModel = () => {
         if (error) {
           printDev.error('사용자 프로필 조회 오류:', error);
           // 기본값으로 설정 (실버 등급)
-          const defaultProfile = {
+          const defaultProfile: UserProfile = {
             user_uuid: currentUserId,
             display_name: user.email || 'Unknown',
             rating: 1600,
@@ -258,6 +260,7 @@ export const useDiscussionViewModel = () => {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             is_admin: false,
+            avatar_url: null,
           };
           setUserProfile(defaultProfile);
           printDev.log(`기본 프로필 설정: ${defaultProfile}`);
@@ -269,7 +272,7 @@ export const useDiscussionViewModel = () => {
         } else {
           printDev.log('프로필 데이터가 없음');
           // 프로필이 없는 경우에도 기본값 설정
-          const defaultProfile = {
+          const defaultProfile: UserProfile = {
             user_uuid: currentUserId,
             display_name: user.email || 'Unknown',
             rating: 1600,
@@ -278,6 +281,7 @@ export const useDiscussionViewModel = () => {
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             is_admin: false,
+            avatar_url: null,
           };
           setUserProfile(defaultProfile);
           printDev.log(`기본 프로필 설정 (데이터 없음): ${defaultProfile}`);
@@ -285,7 +289,7 @@ export const useDiscussionViewModel = () => {
       } catch (error) {
         printDev.error('사용자 프로필 로드 오류:', error);
         // catch 블록에서도 기본값 설정
-        const defaultProfile = {
+        const defaultProfile: UserProfile = {
           user_uuid: currentUserId,
           display_name: user.email || 'Unknown',
           rating: 1600,
@@ -294,13 +298,14 @@ export const useDiscussionViewModel = () => {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           is_admin: false,
+          avatar_url: null,
         };
         setUserProfile(defaultProfile);
         printDev.log(`기본 프로필 설정 (catch): ${defaultProfile}`);
       }
 
       const newSocket = io(serverUrl, {
-        path: import.meta.env.DEV ? '/socket.io' : '/server/socket.io',
+        path: '/socket.io',
       });
       setSocket(newSocket);
 
@@ -868,6 +873,24 @@ export const useDiscussionViewModel = () => {
     }
   };
 
+  /**
+   * 방을 나가고 메인으로 이동하는 함수
+   */
+  const leaveRoomAndNavigate = () => {
+    if (socket && roomId && userId) {
+      printDev.log(`방 나가기 처리: ${roomId}, ${userId}`);
+
+      // 방 나가기 이벤트 전송
+      socket.emit('leave_room', { roomId, userId });
+
+      // 소켓 연결 해제
+      socket.disconnect();
+    }
+
+    // 메인으로 이동
+    navigate('/waiting-room');
+  };
+
   return {
     messages,
     scrollAreaRef,
@@ -900,5 +923,6 @@ export const useDiscussionViewModel = () => {
     setIsBattleResultModalOpen,
     userProfile,
     players, // players 상태 추가
+    leaveRoomAndNavigate, // 방 나가기 함수 추가
   };
 };

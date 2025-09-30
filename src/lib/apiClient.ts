@@ -1,8 +1,9 @@
 import printDev from '@/utils/printDev';
 import { supabase } from './supabaseClient';
 
-const API_BASE_URL =
-  import.meta.env.VITE_SERVER_URL + '/server' || 'http://localhost:3050';
+const API_BASE_URL = import.meta.env.DEV
+  ? import.meta.env.VITE_TEST_SERVER_URL
+  : import.meta.env.VITE_SERVER_URL;
 
 /**
  * 인증된 API 요청을 위한 헤더를 가져오는 함수

@@ -6,7 +6,9 @@ import type { Player, Room, Subject } from '@/models/Room';
 import { useUserProfile } from '@/contexts/useUserProfile';
 import printDev from '@/utils/printDev';
 
-const serverUrl = import.meta.env.VITE_SERVER_URL;
+const serverUrl = import.meta.env.DEV
+  ? import.meta.env.VITE_TEST_SERVER_URL
+  : import.meta.env.VITE_SERVER_URL;
 
 /**
  * 대기실 화면의 상태와 로직을 관리하는 ViewModel 훅
@@ -108,7 +110,7 @@ export const useRoomListViewModel = () => {
     );
 
     const newSocket = io(serverUrl, {
-      path: import.meta.env.DEV ? '/socket.io' : '/server/socket.io',
+      path: '/socket.io',
     });
     setSocket(newSocket);
 

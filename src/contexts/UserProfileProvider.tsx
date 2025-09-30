@@ -6,7 +6,9 @@ import { UserProfileContext } from './UserProfileContext';
 import io from 'socket.io-client';
 import printDev from '@/utils/printDev';
 
-const serverUrl = import.meta.env.VITE_SERVER_URL;
+const serverUrl = import.meta.env.DEV
+  ? import.meta.env.VITE_TEST_SERVER_URL
+  : import.meta.env.VITE_SERVER_URL;
 
 export interface UserProfileContextType {
   user: User | null;
@@ -89,7 +91,7 @@ export const UserProfileProvider: React.FC<UserProfileProviderProps> = ({
 
       // 소켓 연결 생성
       const socket = io(serverUrl, {
-        path: import.meta.env.DEV ? '/socket.io' : '/server/socket.io',
+        path: '/server/socket.io',
       });
 
       // 소켓 연결 완료 후 사용자 프로필 요청

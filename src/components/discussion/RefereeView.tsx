@@ -5,6 +5,10 @@ import MessageRenderer from './MessageRenderer';
 import RefereeScoreModal from '@/components/modals/RefereeScoreModal';
 import type { RefereeViewProps } from './types';
 
+interface ExtendedRefereeViewProps extends RefereeViewProps {
+  leaveRoomAndNavigate: () => void;
+}
+
 const RefereeView = ({
   messages,
   scrollAreaRef,
@@ -16,7 +20,8 @@ const RefereeView = ({
   setIsRefereeScoreModalOpen,
   refereeScoreData,
   handleRefereeScoreSubmit,
-}: RefereeViewProps) => {
+  leaveRoomAndNavigate,
+}: ExtendedRefereeViewProps) => {
   return (
     <>
       <div className='flex-1 flex gap-4 overflow-hidden'>
@@ -201,6 +206,21 @@ const RefereeView = ({
                   시간-30초
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* 심판용 메인으로 돌아가기 버튼 */}
+          <Card className='bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-0 shadow-xl'>
+            <CardContent className='p-4 text-center'>
+              <p className='text-muted-foreground mb-3 text-sm'>
+                심판 모드로 토론을 관리 중입니다
+              </p>
+              <Button
+                onClick={leaveRoomAndNavigate}
+                className='w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0'
+              >
+                메인으로 돌아가기
+              </Button>
             </CardContent>
           </Card>
         </div>

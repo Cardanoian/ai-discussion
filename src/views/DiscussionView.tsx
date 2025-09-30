@@ -33,6 +33,7 @@ const DiscussionView = () => {
     setIsBattleResultModalOpen,
     userProfile,
     players,
+    leaveRoomAndNavigate,
   } = useDiscussionViewModel();
 
   // 플레이어 이름 추출
@@ -63,7 +64,12 @@ const DiscussionView = () => {
 
     switch (userRole) {
       case 'spectator':
-        return <SpectatorView {...baseProps} />;
+        return (
+          <SpectatorView
+            {...baseProps}
+            leaveRoomAndNavigate={leaveRoomAndNavigate}
+          />
+        );
 
       case 'referee':
         return (
@@ -76,6 +82,7 @@ const DiscussionView = () => {
             setIsRefereeScoreModalOpen={setIsRefereeScoreModalOpen}
             refereeScoreData={refereeScoreData}
             handleRefereeScoreSubmit={handleRefereeScoreSubmit}
+            leaveRoomAndNavigate={leaveRoomAndNavigate}
           />
         );
 
@@ -88,6 +95,7 @@ const DiscussionView = () => {
             requestAiHelp={requestAiHelp}
             isRequestingAiHelp={isRequestingAiHelp}
             userPosition={userPosition}
+            leaveRoomAndNavigate={leaveRoomAndNavigate}
           />
         );
     }
