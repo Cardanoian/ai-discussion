@@ -6,13 +6,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-<<<<<<< HEAD
-} from '@/components/ui/card';
-import { Sparkles, BrainCircuit, ArrowRight } from 'lucide-react';
-import { useMainViewModel } from '@/viewmodels/MainViewModel';
-import ProfileButton from '@/components/ProfileButton';
-import ThemeToggleButton from '@/components/ThemeToggleButton';
-=======
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -31,7 +24,6 @@ import {
 import { useMainViewModel } from "@/viewmodels/MainViewModel";
 import ProfileButton from "@/components/ProfileButton";
 import { useState, useEffect } from "react";
->>>>>>> 4b8ae42 ((아바타)프로필 버튼 및 프로필 뷰 개선)
 
 const MainView = () => {
   const { userProfile, loading } = useMainViewModel();
@@ -67,19 +59,6 @@ const MainView = () => {
               <User className="w-5 h-5 text-blue-600" />
               <DialogTitle>프로필 설정 필요</DialogTitle>
             </div>
-<<<<<<< HEAD
-            <h1 className='text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-500'>
-              AI 토론 배틀
-            </h1>
-          </div>
-          <div className='flex items-center gap-2'>
-            <ThemeToggleButton />
-            {!loading && userProfile && (
-              <ProfileButton userProfile={userProfile} />
-            )}
-          </div>
-        </header>
-=======
             <DialogDescription className="space-y-2">
               <p>프로필 사진이 아직 설정되지 않았습니다.</p>
               <p className="text-sm">
@@ -103,7 +82,6 @@ const MainView = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
->>>>>>> 4b8ae42 ((아바타)프로필 버튼 및 프로필 뷰 개선)
 
       <div className="flex flex-col h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-indigo-900/50">
         {/* Background decorative elements */}

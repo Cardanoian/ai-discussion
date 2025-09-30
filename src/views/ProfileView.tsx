@@ -34,19 +34,11 @@ import {
   Crown,
   Zap,
   Edit,
-<<<<<<< HEAD
-} from 'lucide-react';
-import { useProfileViewModel } from '@/viewmodels/ProfileViewModel';
-import ProfileButton from '@/components/ProfileButton';
-import ThemeToggleButton from '@/components/ThemeToggleButton';
-=======
   RefreshCw,
   Sparkles,
 } from "lucide-react";
 import { useProfileViewModel } from "@/viewmodels/ProfileViewModel";
 import ProfileButton from "@/components/ProfileButton";
-import { useEffect } from "react";
->>>>>>> 4b8ae42 ((아바타)프로필 버튼 및 프로필 뷰 개선)
 
 const ProfileView = () => {
   const {
@@ -117,14 +109,6 @@ const ProfileView = () => {
         <div className="absolute bottom-20 left-20 w-64 h-64 bg-gradient-to-tr from-cyan-400/10 to-blue-600/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-<<<<<<< HEAD
-      <div className='relative flex flex-col h-screen p-4 md:p-8'>
-        <header className='flex justify-between items-center mb-12'>
-          <div className='flex items-center space-x-4'>
-            <Link to='/main'>
-              <Button className='bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 group px-8 py-3'>
-                <ArrowLeft className='w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300' />
-=======
       <div className="relative flex flex-col h-screen p-4 md:p-8">
         <header className="flex justify-between items-center mb-12">
           <div className="flex items-center space-x-4">
@@ -134,7 +118,6 @@ const ProfileView = () => {
                 size="sm"
                 className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 dark:hover:bg-slate-800/70">
                 <ArrowLeft className="w-4 h-4 mr-2" />
->>>>>>> 4b8ae42 ((아바타)프로필 버튼 및 프로필 뷰 개선)
                 메인으로
               </Button>
             </Link>
@@ -142,16 +125,9 @@ const ProfileView = () => {
               내 프로필
             </h1>
           </div>
-<<<<<<< HEAD
-          <div className='flex items-center gap-2'>
-            <ThemeToggleButton />
-            {userProfile && <ProfileButton userProfile={userProfile} />}
-          </div>
-=======
           {userProfile && (
             <ProfileButton userProfile={userProfile} />
           )}
->>>>>>> 4b8ae42 ((아바타)프로필 버튼 및 프로필 뷰 개선)
         </header>
 
         <main className="flex-grow animate-in fade-in-50 duration-700">
