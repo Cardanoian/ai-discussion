@@ -22,8 +22,10 @@ import {
  */
 export const useProfileViewModel = () => {
   const { userProfile, loading, updateUserProfile } = useUserProfile();
-  const [isEditNicknameOpen, setIsEditNicknameOpen] = useState(false);
-  const [newNickname, setNewNickname] = useState('');
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [newNickname, setNewNickname] = useState(
+    userProfile?.display_name ?? ''
+  );
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
   const [selectedAvatarStyle, setSelectedAvatarStyle] =
     useState<AvatarStyle>('cartoon');
@@ -31,6 +33,9 @@ export const useProfileViewModel = () => {
     useState<AvatarCustomization>('cat');
   const [previewAvatarUrl, setPreviewAvatarUrl] = useState<string | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState(false);
+  const [isCustomizationDropdownOpen, setIsCustomizationDropdownOpen] =
+    useState(false);
   const navigate = useNavigate();
 
   // 사용자 통계 계산
@@ -97,7 +102,7 @@ export const useProfileViewModel = () => {
       await updateUserProfile(updates);
 
       // 4. 모달 닫기 및 상태 초기화
-      setIsEditNicknameOpen(false);
+      setIsEditProfileOpen(false);
       setNewNickname('');
       setPreviewAvatarUrl(null);
 
@@ -114,7 +119,7 @@ export const useProfileViewModel = () => {
    * 모달 취소 함수
    */
   const handleModalCancel = () => {
-    setIsEditNicknameOpen(false);
+    setIsEditProfileOpen(false);
     setNewNickname(userProfile?.display_name || '');
     setPreviewAvatarUrl(null);
   };
@@ -150,6 +155,26 @@ export const useProfileViewModel = () => {
    */
   const regenerateAvatar = async () => {
     await generateAvatarPreview();
+  };
+
+  /**
+   * 스타일 드랍다운 열림/닫힘 핸들러
+   */
+  const handleStyleDropdownOpenChange = (open: boolean) => {
+    setIsStyleDropdownOpen(open);
+    if (open) {
+      setIsCustomizationDropdownOpen(false);
+    }
+  };
+
+  /**
+   * 커스터마이징 드랍다운 열림/닫힘 핸들러
+   */
+  const handleCustomizationDropdownOpenChange = (open: boolean) => {
+    setIsCustomizationDropdownOpen(open);
+    if (open) {
+      setIsStyleDropdownOpen(false);
+    }
   };
 
   /**
@@ -201,7 +226,7 @@ export const useProfileViewModel = () => {
     userProfile,
     userStats,
     loading,
-    isEditNicknameOpen,
+    isEditProfileOpen,
     newNickname,
     rank,
     isGeneratingAvatar,
@@ -210,13 +235,15 @@ export const useProfileViewModel = () => {
     selectedCustomization,
     previewAvatarUrl,
     avatarCustomizations,
+    isStyleDropdownOpen,
+    isCustomizationDropdownOpen,
 
     // Getters
     getPointsToPromotion,
     getPointsToDemotion,
 
     // Setters
-    setIsEditNicknameOpen,
+    setIsEditProfileOpen,
     setNewNickname,
     setSelectedAvatarStyle,
     setSelectedCustomization,
@@ -228,5 +255,7 @@ export const useProfileViewModel = () => {
     getDisplayName,
     generateAvatarPreview,
     regenerateAvatar,
+    handleStyleDropdownOpenChange,
+    handleCustomizationDropdownOpenChange,
   };
 };

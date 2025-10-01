@@ -1,21 +1,22 @@
 import { RefreshCw, Sparkles } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import {
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
+} from '@/components/ui/dialog';
+import { DialogClose } from '@radix-ui/react-dialog';
 import { Label } from '@radix-ui/react-label';
-import { Input } from '../ui/input';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@radix-ui/react-select';
+} from '@/components/ui/select';
 
 import {
   avatarCustomizations,
@@ -34,6 +35,8 @@ const ProfileChangeModal = () => {
     previewAvatarUrl,
     isGeneratingAvatar,
     isGeneratingPreview,
+    isStyleDropdownOpen,
+    isCustomizationDropdownOpen,
 
     // Setter
     setNewNickname,
@@ -45,6 +48,8 @@ const ProfileChangeModal = () => {
     regenerateAvatar,
     handleModalCancel,
     handleProfileSave,
+    handleStyleDropdownOpenChange,
+    handleCustomizationDropdownOpenChange,
   } = useProfileViewModel();
   return (
     <DialogContent className='sm:max-w-[640px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-white/20'>
@@ -83,7 +88,6 @@ const ProfileChangeModal = () => {
             </span>
           </div>
         </div>
-
         {/* 아바타 스타일 선택 */}
         <div className='grid grid-cols-4 items-center gap-4'>
           <Label className='text-right'>스타일</Label>
@@ -92,11 +96,17 @@ const ProfileChangeModal = () => {
             onValueChange={(value: AvatarStyle) => {
               setSelectedAvatarStyle(value);
             }}
+            open={isStyleDropdownOpen}
+            onOpenChange={handleStyleDropdownOpenChange}
           >
             <SelectTrigger className='col-span-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20'>
               <SelectValue placeholder='아바타 스타일 선택' />
             </SelectTrigger>
-            <SelectContent className='max-h-60'>
+            <SelectContent
+              className='max-h-60 z-[60] relative'
+              position='item-aligned'
+              avoidCollisions={false}
+            >
               {avatarStyles.map((style) => (
                 <SelectItem key={style.id} value={style.id}>
                   <span className='flex flex-col items-start'>
@@ -110,7 +120,6 @@ const ProfileChangeModal = () => {
             </SelectContent>
           </Select>
         </div>
-
         {/* 커스터마이징 선택 */}
         <div className='grid grid-cols-4 items-center gap-4'>
           <Label className='text-right'>동물</Label>
@@ -119,11 +128,17 @@ const ProfileChangeModal = () => {
             onValueChange={(value: AvatarCustomization) => {
               setSelectedCustomization(value);
             }}
+            open={isCustomizationDropdownOpen}
+            onOpenChange={handleCustomizationDropdownOpenChange}
           >
             <SelectTrigger className='col-span-3 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-white/20'>
               <SelectValue placeholder='동물 캐릭터 선택' />
             </SelectTrigger>
-            <SelectContent className='max-h-60'>
+            <SelectContent
+              className='max-h-60 z-[60] relative'
+              position='item-aligned'
+              avoidCollisions={false}
+            >
               {avatarCustomizations.map((custom) => (
                 <SelectItem key={custom.id} value={custom.id}>
                   {custom.name}
@@ -132,7 +147,6 @@ const ProfileChangeModal = () => {
             </SelectContent>
           </Select>
         </div>
-
         {/* 생성 버튼 */}
         <div className='flex justify-center'>
           <Button
@@ -155,7 +169,6 @@ const ProfileChangeModal = () => {
             )}
           </Button>
         </div>
-
         {/* 아바타 미리보기 */}
         {previewAvatarUrl && (
           <div className='flex flex-col items-center gap-4'>
@@ -188,9 +201,16 @@ const ProfileChangeModal = () => {
         )}
       </div>
       <DialogFooter className='gap-2'>
-        <Button type='button' variant='outline' onClick={handleModalCancel}>
-          취소
-        </Button>
+        <DialogClose asChild>
+          <Button
+            type='button'
+            variant='outline'
+            onClick={handleModalCancel}
+            className='bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 group px-8 py-3'
+          >
+            취소
+          </Button>
+        </DialogClose>
         <Button
           type='submit'
           onClick={handleProfileSave}

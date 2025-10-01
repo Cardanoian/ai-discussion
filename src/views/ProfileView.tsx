@@ -28,7 +28,7 @@ const ProfileView = () => {
     userProfile,
     userStats,
     loading,
-    isEditNicknameOpen,
+    isEditProfileOpen,
     rank,
 
     // Getters
@@ -37,8 +37,7 @@ const ProfileView = () => {
     getDisplayName,
 
     // Setters
-    setIsEditNicknameOpen,
-    setNewNickname,
+    setIsEditProfileOpen,
   } = useProfileViewModel();
 
   if (loading) {
@@ -59,25 +58,13 @@ const ProfileView = () => {
 
       <div className='relative flex flex-col h-screen p-4 md:p-8'>
         <header className='flex justify-between items-center mb-12'>
-          <div className='flex items-center space-x-4'>
-            <Link to='/main'>
-              <Button
-                variant='ghost'
-                size='sm'
-                className='bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-white/20 hover:bg-white/70 dark:hover:bg-slate-800/70'
-              >
-                <ArrowLeft className='w-4 h-4 mr-2' />
-                메인으로
-              </Button>
-            </Link>
-            <h1 className='text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-500'>
-              내 프로필
-            </h1>
-          </div>
+          <h1 className='text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-500'>
+            내 프로필
+          </h1>
           {userProfile && <ProfileButton userProfile={userProfile} />}
         </header>
 
-        <main className='flex-grow animate-in fade-in-50 duration-700'>
+        <main className='flex-grow animate-in fade-in-50 duration-700 flex flex-col'>
           {/* User Info Card */}
           <div className='mb-8'>
             <Card className='group relative overflow-hidden bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-0 shadow-xl shadow-blue-500/10 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500'>
@@ -109,25 +96,6 @@ const ProfileView = () => {
                       <CardTitle className='text-2xl'>
                         {getDisplayName()}
                       </CardTitle>
-                      {/* 프로필 변경 버튼&모달창 */}
-                      <Dialog
-                        open={isEditNicknameOpen}
-                        onOpenChange={setIsEditNicknameOpen}
-                      >
-                        <DialogTrigger asChild>
-                          <Button
-                            variant='ghost'
-                            size='sm'
-                            className='p-1 h-auto hover:bg-white/20 dark:hover:bg-slate-800/20'
-                            onClick={() =>
-                              setNewNickname(userProfile?.display_name || '')
-                            }
-                          >
-                            <Edit className='w-4 h-4 text-muted-foreground hover:text-foreground' />
-                          </Button>
-                        </DialogTrigger>
-                        <ProfileChangeModal />
-                      </Dialog>
                     </div>
                     <div className='flex items-center space-x-2 justify-center'>
                       <span
@@ -249,6 +217,28 @@ const ProfileView = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Bottom Buttons */}
+          <div className='flex justify-center items-center gap-4 mt-6'>
+            <Link to='/main'>
+              <Button className='bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white border-0 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 group px-8 py-3'>
+                <ArrowLeft className='w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300' />
+                메인으로
+              </Button>
+            </Link>
+            <Dialog
+              open={isEditProfileOpen}
+              onOpenChange={setIsEditProfileOpen}
+            >
+              <DialogTrigger asChild>
+                <Button className='bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg shadow-blue-500/25 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 group px-8 py-3'>
+                  <Edit className='w-4 h-4 mr-2 group-hover:scale-110 transition-transform duration-300' />
+                  수정하기
+                </Button>
+              </DialogTrigger>
+              <ProfileChangeModal />
+            </Dialog>
+          </div>
         </main>
       </div>
     </div>
