@@ -19,6 +19,7 @@ import { Sparkles, BrainCircuit, ArrowRight, User } from 'lucide-react';
 import { useMainViewModel } from '@/viewmodels/MainViewModel';
 import ProfileButton from '@/components/ProfileButton';
 import { useState, useEffect } from 'react';
+import ThemeToggleButton from '@/components/ThemeToggleButton';
 
 const MainView = () => {
   const { userProfile, loading } = useMainViewModel();
@@ -93,6 +94,12 @@ const MainView = () => {
               <h1 className='text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-500'>
                 AI 토론 배틀
               </h1>
+            </div>
+            <div className='flex items-center gap-2'>
+              <ThemeToggleButton />
+              {!loading && userProfile && (
+                <ProfileButton userProfile={userProfile} />
+              )}
             </div>
             {!loading && userProfile && (
               <ProfileButton userProfile={userProfile} />

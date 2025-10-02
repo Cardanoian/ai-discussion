@@ -21,6 +21,7 @@ import { useProfileViewModel } from '@/viewmodels/ProfileViewModel';
 import ProfileButton from '@/components/ProfileButton';
 import ProfileChangeModal from '@/components/modals/ProfileChangeModal';
 import { Dialog, DialogTrigger } from '@radix-ui/react-dialog';
+import ThemeToggleButton from '@/components/ThemeToggleButton';
 
 const ProfileView = () => {
   const {
@@ -61,7 +62,10 @@ const ProfileView = () => {
           <h1 className='text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-500'>
             내 프로필
           </h1>
-          {userProfile && <ProfileButton userProfile={userProfile} />}
+          <div className='flex items-center gap-2'>
+            <ThemeToggleButton />
+            {userProfile && <ProfileButton userProfile={userProfile} />}
+          </div>
         </header>
 
         <main className='flex-grow animate-in fade-in-50 duration-700 flex flex-col'>
