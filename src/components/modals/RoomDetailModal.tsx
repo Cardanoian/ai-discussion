@@ -24,8 +24,8 @@ import {
 } from 'lucide-react';
 import { getRankTitle } from '@/lib/constants';
 import type { Room, Subject, Player } from '@/models/Room';
-import type { UserProfile } from '@/types/user';
 import ChangeSubjectModal from './ChangeSubjectModal';
+import type { UserProfile } from '@/models/Profile';
 
 interface RoomDetailModalProps {
   isOpen: boolean;
