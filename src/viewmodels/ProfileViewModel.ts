@@ -5,11 +5,7 @@ import { getRankTitle } from '@/lib/constants';
 import { useUserProfile } from '@/contexts/useUserProfile';
 import type { UserStats } from '@/models/Profile';
 import printDev from '@/utils/printDev';
-import {
-  createAndUploadAvatar,
-  generateAvatarWithGemini,
-  createPreviewUrl,
-} from '@/utils/avatarGenerator';
+import { generateAvatar } from '@/lib/apiClient';
 import {
   avatarCustomizations,
   type AvatarStyle,
@@ -63,7 +59,7 @@ export const useProfileViewModel = () => {
   }, [userProfile]);
 
   /**
-   * 통합된 프로필 설정 저장 함수 (닉네임 + 아바타)
+   * 통합된 프로필 설정 저장 함수 (닉네임만 업데이트, 아바타는 이미 백엔드에서 처리됨)
    */
   const handleProfileSave = async () => {
     if (!userProfile) return;
@@ -71,37 +67,15 @@ export const useProfileViewModel = () => {
     try {
       setIsGeneratingAvatar(true);
 
-      // 1. 닉네임 업데이트 준비
+      // 닉네임 업데이트 (아바타는 미리보기 생성 시 이미 백엔드에서 DB 업데이트 완료)
       const trimmedNickname = newNickname.trim();
-      const updates: {
-        display_name: string | undefined;
-        avatar_url: string | undefined;
-      } = {
-        display_name: trimmedNickname || undefined,
-        avatar_url: undefined,
-      };
-
-      // 2. 미리보기 아바타가 생성되어 있으면 업로드
-      if (previewAvatarUrl && previewAvatarUrl.startsWith('blob:')) {
-        // 선택한 커스터마이징 가져오기
-        const customization =
-          avatarCustomizations.find((c) => c.id === selectedCustomization)
-            ?.value || 'person';
-
-        // 아바타 생성 및 업로드
-        const avatarUrl = await createAndUploadAvatar(
-          userProfile.user_uuid,
-          selectedAvatarStyle,
-          customization
-        );
-
-        updates.avatar_url = avatarUrl;
+      if (trimmedNickname) {
+        await updateUserProfile({
+          display_name: trimmedNickname,
+        });
       }
 
-      // 3. 프로필 업데이트
-      await updateUserProfile(updates);
-
-      // 4. 모달 닫기 및 상태 초기화
+      // 모달 닫기 및 상태 초기화
       setIsEditProfileOpen(false);
       setNewNickname('');
       setPreviewAvatarUrl(null);
@@ -125,9 +99,11 @@ export const useProfileViewModel = () => {
   };
 
   /**
-   * 아바타 미리보기 생성
+   * 아바타 미리보기 생성 (백엔드 API 호출)
    */
   const generateAvatarPreview = async () => {
+    if (!userProfile) return;
+
     try {
       setIsGeneratingPreview(true);
 
@@ -135,13 +111,14 @@ export const useProfileViewModel = () => {
         avatarCustomizations.find((c) => c.id === selectedCustomization)
           ?.value || 'person';
 
-      const blob = await generateAvatarWithGemini({
-        style: selectedAvatarStyle,
-        customization,
-      });
+      // 백엔드에서 아바타 생성 및 업로드 (DB도 자동 업데이트됨)
+      const avatarUrl = await generateAvatar(
+        userProfile.user_uuid,
+        selectedAvatarStyle,
+        customization
+      );
 
-      const url = createPreviewUrl(blob);
-      setPreviewAvatarUrl(url);
+      setPreviewAvatarUrl(avatarUrl);
     } catch (error) {
       printDev.error('Error generating preview:', error);
       alert('미리보기 생성 중 오류가 발생했습니다.');

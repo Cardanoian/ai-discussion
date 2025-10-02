@@ -1,5 +1,6 @@
 import printDev from '@/utils/printDev';
 import { supabase } from './supabaseClient';
+import type { AvatarStyle } from '@/types/avatar';
 
 const API_BASE_URL = import.meta.env.DEV
   ? import.meta.env.VITE_TEST_SERVER_URL
@@ -152,5 +153,41 @@ export const generateDiscussionHelp = async (
     throw error instanceof Error
       ? error
       : new Error('AI 도움 요청 처리 중 오류가 발생했습니다.');
+  }
+};
+
+/**
+ * 아바타 생성 및 업로드 (백엔드 처리)
+ */
+export const generateAvatar = async (
+  userId: string,
+  style: AvatarStyle,
+  customization: string
+): Promise<string> => {
+  try {
+    const headers = await getAuthHeaders();
+
+    const response = await fetch(`${API_BASE_URL}/api/gemini/generate-avatar`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        userId,
+        style,
+        customization,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'API 요청에 실패했습니다.');
+    }
+
+    const data = await response.json();
+    return data.avatarUrl;
+  } catch (error) {
+    printDev.error('아바타 생성 오류:', error);
+    throw error instanceof Error
+      ? error
+      : new Error('아바타 생성에 실패했습니다.');
   }
 };
